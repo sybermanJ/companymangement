@@ -26,10 +26,12 @@ async fn main() -> anyhow::Result<()> {
 
     let mut app = cm_server::router(cm_server::AppState::new(pool, cookie_secure, base_url));
     // Serve the built web app (single-page app: unknown paths get index.html).
-    let web_dir = std::path::PathBuf::from(std::env::var("WEB_DIR").unwrap_or_else(|_| "web/dist".into()));
+    let web_dir =
+        std::path::PathBuf::from(std::env::var("WEB_DIR").unwrap_or_else(|_| "web/dist".into()));
     if web_dir.join("index.html").exists() {
-        let spa = tower_http::services::ServeDir::new(&web_dir)
-            .fallback(tower_http::services::ServeFile::new(web_dir.join("index.html")));
+        let spa = tower_http::services::ServeDir::new(&web_dir).fallback(
+            tower_http::services::ServeFile::new(web_dir.join("index.html")),
+        );
         app = app.fallback_service(spa);
     } else {
         tracing::warn!(dir = %web_dir.display(), "web app not built; serving API only");
