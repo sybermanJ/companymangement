@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+    env:
+      # Non-superuser role so row-level security is actually enforced in tests.
+      DATABASE_URL: postgres://cm_app:cm_app@localhost/cm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Create app role and database
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE ROLE cm_app LOGIN PASSWORD 'cm_app';"
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE cm OWNER cm_app;"
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - run: cargo test --locked --workspace

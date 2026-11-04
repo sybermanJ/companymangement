@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>记录工作（手机）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2E5D4A}a:hover{color:#1A3B2E}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F8F4ED; color: #1D1B1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 15px; display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; gap: 8px; padding: 12px 8px; background: #FFFEF8; border-bottom: 1px solid #DAD4CB">
+    <button type="button" aria-label="返回" style="width: 44px; height: 44px; border: 0; background: transparent; color: #1D1B1C">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    </button>
+    <h1 style="margin: 0; flex: 1 1 auto; font-family: 'Noto Serif SC', serif; font-size: 19px; font-weight: 700">记录工作</h1>
+    <button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #2E5D4A; border-radius: 18px; background: #FFFEF8; color: #2E5D4A; font: inherit; font-size: 14px">开始计时</button>
+  </header>
+
+  <div style="flex: 1 1 auto; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+    <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #424B50">任务
+      <button type="button" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 12px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit; text-align: left">
+        <span style="font-size: 12px; color: #424B50">PAY-142</span>
+        <span style="flex: 1 1 auto">订单服务改造</span>
+        <span aria-hidden="true" style="color: #424B50">▾</span>
+      </button>
+    </label>
+
+    <div>
+      <div style="font-size: 13px; color: #424B50; margin-bottom: 6px">今天 · 用时</div>
+      <div role="group" aria-label="用时" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+        <button type="button" style="height: 44px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit">0.5h</button>
+        <button type="button" style="height: 44px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit">1h</button>
+        <button type="button" style="height: 44px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit">2h</button>
+        <button type="button" aria-pressed="true" style="height: 44px; border: 0; border-radius: 10px; background: #2E5D4A; color: #FFFEF8; font: inherit; font-weight: 700">3h</button>
+        <button type="button" style="height: 44px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit">其他</button>
+      </div>
+    </div>
+
+    <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #424B50">做了什么
+      <textarea rows="4" style="padding: 10px 12px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit; font-size: 15px; resize: none">完成下单接口幂等改造，补充重复支付回调的处理和单元测试。</textarea>
+    </label>
+
+    <div>
+      <div style="font-size: 13px; color: #424B50; margin-bottom: 6px">附件与产出</div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+        <button type="button" style="height: 64px; border: 1px dashed #BBB5AC; border-radius: 10px; background: #F5F0E6; color: #3B3A3E; font: inherit; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>拍照</button>
+        <button type="button" style="height: 64px; border: 1px dashed #BBB5AC; border-radius: 10px; background: #F5F0E6; color: #3B3A3E; font: inherit; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>录音</button>
+        <button type="button" style="height: 64px; border: 1px dashed #BBB5AC; border-radius: 10px; background: #F5F0E6; color: #3B3A3E; font: inherit; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>视频</button>
+        <button type="button" style="height: 64px; border: 1px dashed #BBB5AC; border-radius: 10px; background: #F5F0E6; color: #3B3A3E; font: inherit; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/></svg>文件</button>
+      </div>
+      <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #DAD4CB; border-radius: 10px; background: #FFFEF8">
+          <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 6px; background: #D8E3E7"></div>
+          <div style="flex: 1 1 auto; min-width: 0"><div>接口压测截图.png</div><div style="font-size: 12px; color: #424B50">1.2 MB · 已上传</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #DAD4CB; border-radius: 10px; background: #FFFEF8">
+          <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 6px; background: #EEF7F2; color: #2E5D4A; display: flex; align-items: center; justify-content: center">▶</div>
+          <div style="flex: 1 1 auto; min-width: 0"><div>语音说明</div><div style="font-size: 12px; color: #424B50">0:42 · 上传中 68%</div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #DAD4CB; border-radius: 10px; background: #FFFEF8">
+          <div aria-hidden="true" style="width: 40px; height: 40px; border-radius: 6px; background: #F5F0E6; color: #3B3A3E; display: flex; align-items: center; justify-content: center; font-size: 12px">Git</div>
+          <div style="flex: 1 1 auto; min-width: 0"><div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">fix: 订单回调幂等 PAY-142</div><div style="font-size: 12px; color: #424B50">a1b2c3d · 自动关联 · +128 −34</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 10px 12px; border-radius: 10px; background: #EEF7F2; color: #2E5D4A; font-size: 13px">
+      本任务要求的产出：文字说明 ✓ · 至少 1 个代码提交 ✓
+    </div>
+  </div>
+
+  <div style="padding: 12px 16px 24px; background: #FFFEF8; border-top: 1px solid #DAD4CB">
+    <button type="button" style="width: 100%; height: 48px; border: 0; border-radius: 12px; background: #2E5D4A; color: #FFFEF8; font: inherit; font-size: 16px; font-weight: 700">保存记录</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>项目甘特图</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F8F4ED}
+a{color:#2E5D4A}a:hover{color:#1A3B2E}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #F8F4ED; color: #1D1B1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 12px 32px; background: #FFFEF8; border-bottom: 1px solid #DAD4CB">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; color: #2E5D4A">衡图</div>
+    <nav aria-label="主导航" style="display: flex; flex-wrap: wrap; gap: 4px">
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">总览</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; background: #EEF7F2; color: #2E5D4A; font-weight: 500; text-decoration: none">项目</a>
+      <a href="Team.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">团队</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">我的工作</a>
+      <a href="Finance.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">财务</a>
+    </nav>
+    <div style="flex: 1 1 auto"></div>
+    <button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #DAD4CB; border-radius: 8px; background: #F5F0E6; color: #3B3A3E; font: inherit">示例科技有限公司 ▾</button>
+    <button type="button" aria-label="通知，3 条未读" style="position: relative; width: 44px; height: 44px; border: 0; background: transparent; color: #3B3A3E">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+      <span style="position: absolute; top: 6px; right: 6px; min-width: 16px; height: 16px; border-radius: 8px; background: #9E2F2F; color: #FFFEF8; font-size: 11px; line-height: 16px">3</span>
+    </button>
+    <div aria-label="当前用户：林晓" style="width: 36px; height: 36px; border-radius: 18px; background: #2E5D4A; color: #FFFEF8; display: flex; align-items: center; justify-content: center; font-weight: 500">林</div>
+  </header>
+
+  <main style="max-width: 1400px; margin: 0 auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <div style="font-size: 13px; color: #424B50">项目 / PAY</div>
+        <h1 style="margin: 4px 0 0; font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 700">支付系统重构</h1>
+      </div>
+      <div role="group" aria-label="视图" style="display: flex; border: 1px solid #BBB5AC; border-radius: 8px; overflow: hidden">
+        <button type="button" style="height: 36px; padding: 0 14px; border: 0; background: #2E5D4A; color: #FFFEF8; font: inherit">甘特图</button>
+        <button type="button" style="height: 36px; padding: 0 14px; border: 0; background: #FFFEF8; color: #3B3A3E; font: inherit">列表</button>
+        <button type="button" style="height: 36px; padding: 0 14px; border: 0; background: #FFFEF8; color: #3B3A3E; font: inherit">看板</button>
+      </div>
+      <button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #2E5D4A; color: #FFFEF8; font: inherit; font-weight: 500">+ 新建任务</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+      <div style="flex: 1 1 200px; padding: 16px; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px">
+        <div style="font-size: 13px; color: #424B50">已记录工时 / 预估</div>
+        <div style="margin-top: 6px; font-size: 22px; font-weight: 700">612 <span style="font-size: 14px; font-weight: 400; color: #424B50">/ 900 小时</span></div>
+      </div>
+      <div style="flex: 1 1 200px; padding: 16px; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px">
+        <div style="font-size: 13px; color: #424B50">人工预算使用</div>
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 10px">
+          <span style="font-size: 22px; font-weight: 700; color: #806332">76%</span>
+          <span style="padding: 2px 8px; border-radius: 6px; background: #F9F4DC; color: #806332; font-size: 12px">接近 80% 预警线</span>
+        </div>
+        <div style="margin-top: 8px; height: 6px; border-radius: 3px; background: #F5F0E6"><div style="width: 76%; height: 6px; border-radius: 3px; background: #806332"></div></div>
+      </div>
+      <div style="flex: 1 1 200px; padding: 16px; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px">
+        <div style="font-size: 13px; color: #424B50">进行中 / 全部任务</div>
+        <div style="margin-top: 6px; font-size: 22px; font-weight: 700">2 <span style="font-size: 14px; font-weight: 400; color: #424B50">/ 7</span></div>
+      </div>
+      <div style="flex: 1 1 200px; padding: 16px; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px">
+        <div style="font-size: 13px; color: #424B50">待审批转交</div>
+        <div style="margin-top: 6px; font-size: 22px; font-weight: 700">1 <a href="Handoff.dc.html" style="font-size: 14px; font-weight: 400">查看</a></div>
+      </div>
+    </div>
+
+    <section aria-label="甘特图" style="background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px; overflow-x: auto">
+      <div style="min-width: 1100px">
+        <div style="display: flex; border-bottom: 1px solid #DAD4CB; background: #F5F0E6">
+          <div style="flex: 0 0 340px; padding: 10px 16px; font-size: 13px; color: #424B50; font-weight: 500">任务 · 负责人</div>
+          <div style="flex: 1 1 auto; position: relative">
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+              <sc-for list="{{weeks}}" as="w" hint-placeholder-count="4">
+                <div style="padding: 10px 8px; font-size: 13px; color: #424B50; border-left: 1px solid #DAD4CB">{{w.label}}</div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="position: relative">
+          <div aria-hidden="true" style="position: absolute; left: 340px; right: 0; top: 0; bottom: 0; display: grid; grid-template-columns: repeat(28, minmax(0, 1fr))">
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="28">
+              <div style="{{d.style}}"></div>
+            </sc-for>
+          </div>
+          <div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: calc(340px + (100% - 340px) * 0.5893); width: 2px; background: #9E2F2F"></div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+            <div style="position: relative; display: flex; align-items: center; height: 46px; border-bottom: 1px solid #F5F0E6">
+              <div style="{{r.labelStyle}}">
+                <span style="font-size: 12px; color: #424B50; flex: 0 0 auto">{{r.key}}</span>
+                <span style="flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.title}}</span>
+                <span style="flex: 0 0 auto; font-size: 12px; color: #3B3A3E">{{r.who}}</span>
+              </div>
+              <div style="flex: 1 1 auto; position: relative; height: 46px">
+                <div style="{{r.barStyle}}">
+                  <div style="{{r.fillStyle}}"></div>
+                  <span style="position: relative; font-size: 12px; white-space: nowrap; padding: 0 8px">{{r.barText}}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; color: #424B50">
+      <span><span style="display: inline-block; width: 18px; height: 8px; border-radius: 4px; background: #7BC092; border: 1px solid #2E5D4A; vertical-align: middle"></span> 进行中（填充为已完成比例）</span>
+      <span><span style="display: inline-block; width: 18px; height: 8px; border-radius: 4px; background: #BBB5AC; vertical-align: middle"></span> 已完成</span>
+      <span><span style="display: inline-block; width: 18px; height: 8px; border-radius: 4px; border: 1px dashed #2E5D4A; vertical-align: middle"></span> 未开始</span>
+      <span>◆ 里程碑</span>
+      <span>⇄2 = 转交过 2 次</span>
+      <span><span style="display: inline-block; width: 2px; height: 12px; background: #9E2F2F; vertical-align: middle"></span> 今天 11月4日</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var N = 28;
+    var weeks = [{ label: '10月19日 – 25日' }, { label: '10月26日 – 11月1日' }, { label: '11月2日 – 8日' }, { label: '11月9日 – 15日' }];
+    var days = [];
+    for (var i = 0; i < N; i++) {
+      var weekend = (i % 7) >= 5;
+      days.push({ style: 'border-left: 1px solid ' + (i % 7 === 0 ? '#DAD4CB' : '#F5F0E6') + ';' + (weekend ? 'background: #F5F0E6;' : '') });
+    }
+    var data = [
+      { key: '', title: '需求与设计', who: '', s: 0, d: 7, kind: 'phase', depth: 0 },
+      { key: 'PAY-101', title: '接口设计评审', who: '林晓', s: 0, d: 4, kind: 'done', depth: 1, text: '完成' },
+      { key: 'PAY-102', title: '数据库方案', who: '陈默', s: 2, d: 5, kind: 'done', depth: 1, text: '完成' },
+      { key: '', title: '开发', who: '', s: 7, d: 14, kind: 'phase', depth: 0 },
+      { key: 'PAY-142', title: '订单服务改造', who: '王磊', s: 7, d: 12, kind: 'active', p: 60, depth: 1, text: '60% · ⇄2' },
+      { key: 'PAY-143', title: '对账模块', who: '赵敏', s: 9, d: 10, kind: 'active', p: 35, depth: 1, text: '35%' },
+      { key: 'PAY-150', title: '前端结算页', who: '周宁', s: 17, d: 6, kind: 'todo', depth: 1, text: '未开始' },
+      { key: '', title: '联调开始', who: '', s: 21, d: 0, kind: 'milestone', depth: 1 },
+      { key: 'PAY-160', title: '集成测试', who: '角色：测试工程师', s: 21, d: 5, kind: 'todo', depth: 1, text: '待认领' },
+      { key: '', title: '上线', who: '', s: 27, d: 0, kind: 'milestone', depth: 1 }
+    ];
+    var rows = data.map(function (r) {
+      var left = (r.s / N * 100).toFixed(3) + '%';
+      var width = (r.d / N * 100).toFixed(3) + '%';
+      var bar, fill = 'display: none';
+      if (r.kind === 'phase') {
+        bar = 'position: absolute; top: 19px; left: ' + left + '; width: ' + width + '; height: 8px; border-radius: 2px; background: #424B50';
+      } else if (r.kind === 'milestone') {
+        bar = 'position: absolute; top: 14px; left: calc(' + left + ' - 9px); width: 18px; height: 18px; transform: rotate(45deg); background: #2A475F; border-radius: 3px';
+      } else if (r.kind === 'done') {
+        bar = 'position: absolute; top: 11px; left: ' + left + '; width: ' + width + '; height: 24px; border-radius: 6px; background: #DAD4CB; color: #1D1B1C; display: flex; align-items: center; overflow: hidden';
+      } else if (r.kind === 'active') {
+        bar = 'position: absolute; top: 11px; left: ' + left + '; width: ' + width + '; height: 24px; border-radius: 6px; border: 1px solid #2E5D4A; background: #EEF7F2; color: #1D1B1C; display: flex; align-items: center; box-sizing: border-box; overflow: hidden';
+        fill = 'position: absolute; left: 0; top: 0; bottom: 0; width: ' + r.p + '%; background: #7BC092';
+      } else {
+        bar = 'position: absolute; top: 11px; left: ' + left + '; width: ' + width + '; height: 24px; border-radius: 6px; border: 1px dashed #2E5D4A; background: #EEF7F2; color: #2E5D4A; display: flex; align-items: center; box-sizing: border-box; overflow: hidden';
+      }
+      var label = 'flex: 0 0 340px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 16px 0 ' + (16 + r.depth * 18) + 'px;' + (r.depth === 0 ? ' font-weight: 700;' : '');
+      return { key: r.key, title: r.title, who: r.who, barStyle: bar, fillStyle: fill, barText: r.kind === 'active' ? r.text : (r.text || ''), labelStyle: label };
+    });
+    return { weeks: weeks, days: days, rows: rows };
+  }
+}
+</script>
+</body>
+</html>

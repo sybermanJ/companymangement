@@ -1,0 +1,19 @@
+[package]
+name = "cm-domain"
+description = "Pure business rules: cost, currency conversion, thresholds, hand-offs, work-item lifecycle"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+rust_decimal.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+rust_decimal_macros = "1"
+
+[lints]
+workspace = true

@@ -57,7 +57,7 @@ companymangement/
 │  ├─ cm-domain/              # pure rules, no I/O: work-item state machine, reassignment rules,
 │  │                          # recurrence expansion, cost & threshold evaluation, rollups
 │  ├─ cm-store/               # sqlx + PostgreSQL repositories, migrations, outbox
-│  ├─ cm-storage/             # object storage adapter (object_store crate: S3/MinIO/local FS)
+│  ├─ cm-storage/             # (later) object storage adapter (object_store crate: S3/MinIO/local FS)
 │  ├─ cm-integrations/        # Git: GitHub App + self-hosted Git webhooks (Gitea/GitLab/generic),
 │  │                          # transactional email (SMTP / provider API)
 │  ├─ cm-notify/              # built-in notification centre: inbox, realtime push (SSE),

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>团队视图</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F8F4ED}
+a{color:#2E5D4A}a:hover{color:#1A3B2E}
+</style>
+</helmet>
+<div style="min-height: 820px; background: #F8F4ED; color: #1D1B1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 12px 32px; background: #FFFEF8; border-bottom: 1px solid #DAD4CB">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; color: #2E5D4A">衡图</div>
+    <nav aria-label="主导航" style="display: flex; flex-wrap: wrap; gap: 4px">
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">总览</a>
+      <a href="Main.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">项目</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; background: #EEF7F2; color: #2E5D4A; font-weight: 500; text-decoration: none">团队</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">我的工作</a>
+      <a href="Finance.dc.html" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">财务</a>
+    </nav>
+  </header>
+
+  <main style="max-width: 1400px; margin: 0 auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <h1 style="margin: 0; font-family: 'Noto Serif SC', serif; font-size: 28px; font-weight: 700">谁在做什么</h1>
+        <p style="margin: 6px 0 0; color: #424B50">每格为一周工时（满格 40 小时），按项目分色；红框表示超负荷。</p>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #424B50">部门
+        <select style="height: 36px; padding: 0 10px; border: 1px solid #BBB5AC; border-radius: 8px; background: #FFFEF8; font: inherit; color: #1D1B1C"><option>全部部门</option><option>研发部</option><option>产品部</option></select>
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #424B50">时间范围
+        <select style="height: 36px; padding: 0 10px; border: 1px solid #BBB5AC; border-radius: 8px; background: #FFFEF8; font: inherit; color: #1D1B1C"><option>10月19日 – 11月15日</option></select>
+      </label>
+      <button type="button" style="height: 36px; padding: 0 16px; border: 1px solid #BBB5AC; border-radius: 8px; background: #FFFEF8; color: #1D1B1C; font: inherit">导出 XLSX</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #3B3A3E">
+      <sc-for list="{{legend}}" as="l" hint-placeholder-count="4">
+        <span style="display: flex; align-items: center; gap: 6px"><span style="{{l.swatch}}"></span>{{l.name}}</span>
+      </sc-for>
+    </div>
+
+    <section aria-label="团队工时分布" style="background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px; overflow-x: auto">
+      <table style="width: 100%; min-width: 1000px; border-collapse: collapse">
+        <thead>
+          <tr style="background: #F5F0E6; text-align: left; font-size: 13px; color: #424B50">
+            <th scope="col" style="padding: 10px 16px; font-weight: 500; width: 220px">成员 · 角色</th>
+            <th scope="col" style="padding: 10px 8px; font-weight: 500">10月19日周</th>
+            <th scope="col" style="padding: 10px 8px; font-weight: 500">10月26日周</th>
+            <th scope="col" style="padding: 10px 8px; font-weight: 500">11月2日周（本周）</th>
+            <th scope="col" style="padding: 10px 8px; font-weight: 500">11月9日周</th>
+            <th scope="col" style="padding: 10px 16px; font-weight: 500; width: 260px">4 周合计 · 项目占比</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+            <sc-if value="{{r.isGroup}}" hint-placeholder-val="{{false}}">
+              <tr><th scope="rowgroup" colspan="6" style="padding: 12px 16px 6px; text-align: left; font-size: 13px; color: #2E5D4A; font-weight: 700; border-top: 1px solid #DAD4CB">{{r.name}}</th></tr>
+            </sc-if>
+            <sc-if value="{{r.isPerson}}" hint-placeholder-val="{{true}}">
+              <tr style="border-top: 1px solid #F5F0E6">
+                <th scope="row" style="padding: 10px 16px; text-align: left; font-weight: 400">
+                  <div style="font-weight: 500">{{r.name}}</div>
+                  <div style="font-size: 12px; color: #424B50">{{r.role}}</div>
+                </th>
+                <sc-for list="{{r.weeks}}" as="w" hint-placeholder-count="4">
+                  <td style="padding: 10px 8px">
+                    <div style="{{w.frame}}">
+                      <sc-for list="{{w.segs}}" as="g" hint-placeholder-count="2">
+                        <div style="{{g.style}}"></div>
+                      </sc-for>
+                    </div>
+                    <div style="{{w.labelStyle}}">{{w.label}}</div>
+                  </td>
+                </sc-for>
+                <td style="padding: 10px 16px">
+                  <div style="font-weight: 700">{{r.total}} 小时</div>
+                  <div style="font-size: 12px; color: #424B50">{{r.split}}</div>
+                </td>
+              </tr>
+            </sc-if>
+          </sc-for>
+        </tbody>
+      </table>
+    </section>
+    <p style="margin: 0; font-size: 13px; color: #424B50">项目经理视角：只显示工时，不显示金额。点击任一格可查看当周的工作记录与产出。</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var P = {
+      PAY: { name: 'PAY 支付系统重构', c: '#2E5D4A' },
+      CRM: { name: 'CRM 客户门户', c: '#1661AB' },
+      OPS: { name: 'OPS 运维平台', c: '#C3B787' },
+      RT: { name: '日常任务', c: '#BBB5AC' }
+    };
+    var order = ['PAY', 'CRM', 'OPS', 'RT'];
+    var legend = order.map(function (k) { return { name: P[k].name, swatch: 'display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: ' + P[k].c }; });
+    var people = [
+      { group: '研发部' },
+      { name: '王磊', role: '后端工程师', w: [{ PAY: 30, RT: 6 }, { PAY: 34, RT: 6 }, { PAY: 28, CRM: 12, RT: 6 }, { PAY: 32, RT: 6 }] },
+      { name: '赵敏', role: '后端工程师', w: [{ CRM: 24, RT: 6 }, { PAY: 16, CRM: 16, RT: 6 }, { PAY: 30, RT: 6 }, { PAY: 30, RT: 5 }] },
+      { name: '周宁', role: '前端工程师', w: [{ CRM: 32, RT: 6 }, { CRM: 30, RT: 6 }, { CRM: 14, RT: 6 }, { PAY: 20, CRM: 10, RT: 6 }] },
+      { name: '陈默', role: '架构师', w: [{ PAY: 20, OPS: 14, RT: 4 }, { PAY: 12, OPS: 22, RT: 4 }, { OPS: 30, RT: 4 }, { OPS: 26, RT: 4 }] },
+      { group: '质量部' },
+      { name: '孙悦', role: '测试工程师', w: [{ CRM: 20, RT: 8 }, { CRM: 26, RT: 8 }, { CRM: 18, OPS: 10, RT: 8 }, { PAY: 24, RT: 8 }] },
+      { group: '产品部' },
+      { name: '林晓', role: '产品经理', w: [{ PAY: 14, CRM: 14, RT: 8 }, { PAY: 10, CRM: 16, RT: 8 }, { PAY: 12, CRM: 12, RT: 8 }, { PAY: 10, CRM: 10, RT: 8 }] }
+    ];
+    var rows = people.map(function (p) {
+      if (p.group) return { isGroup: true, isPerson: false, name: p.group };
+      var tot = {}; var grand = 0;
+      var weeks = p.w.map(function (wk) {
+        var sum = 0; order.forEach(function (k) { sum += wk[k] || 0; });
+        var over = sum > 40;
+        var segs = order.filter(function (k) { return wk[k]; }).map(function (k) {
+          tot[k] = (tot[k] || 0) + wk[k];
+          return { style: 'height: 100%; width: ' + (wk[k] / Math.max(40, sum) * 100).toFixed(2) + '%; background: ' + P[k].c };
+        });
+        grand += sum;
+        return {
+          segs: segs,
+          frame: 'display: flex; height: 18px; border-radius: 4px; overflow: hidden; background: #F5F0E6; box-sizing: border-box; ' + (over ? 'outline: 2px solid #9E2F2F; outline-offset: 1px;' : ''),
+          label: sum + ' 小时' + (over ? ' · 超负荷' : ''),
+          labelStyle: 'margin-top: 4px; font-size: 12px; color: ' + (over ? '#9E2F2F; font-weight: 700' : '#424B50')
+        };
+      });
+      var split = order.filter(function (k) { return tot[k]; }).map(function (k) { return k + ' ' + Math.round(tot[k] / grand * 100) + '%'; }).join(' · ');
+      return { isGroup: false, isPerson: true, name: p.name, role: p.role, weeks: weeks, total: grand, split: split };
+    });
+    return { legend: legend, rows: rows };
+  }
+}
+</script>
+</body>
+</html>

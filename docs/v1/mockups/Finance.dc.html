@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>财务：费率、阈值与预警</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F8F4ED}
+a{color:#2E5D4A}a:hover{color:#1A3B2E}
+</style>
+</helmet>
+<div style="min-height: 880px; background: #F8F4ED; color: #1D1B1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 12px 32px; background: #FFFEF8; border-bottom: 1px solid #DAD4CB">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; color: #2E5D4A">衡图</div>
+    <nav aria-label="财务" style="display: flex; flex-wrap: wrap; gap: 4px">
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; background: #EEF7F2; color: #2E5D4A; font-weight: 500; text-decoration: none">项目成本</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">时薪</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">汇率</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 8px; color: #3B3A3E; text-decoration: none">工时周期</a>
+    </nav>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 20px">
+    <div role="alert" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: #F2CAC9; color: #9E2F2F">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+      <span style="flex: 1 1 300px"><strong>严重预警</strong> · CRM 客户门户人工成本已达预算的 103%（USD 41,200 / 40,000），11月3日 16:20 触发。</span>
+      <button type="button" style="height: 36px; padding: 0 14px; border: 1px solid #9E2F2F; border-radius: 8px; background: #FFFEF8; color: #9E2F2F; font: inherit">确认并备注</button>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: #F9F4DC; color: #806332">
+      <span style="flex: 1 1 300px">2 条工时记录缺少 EUR → USD 的 11月2日汇率，暂未计入成本和阈值判断。</span>
+      <a href="#" style="color: #806332; font-weight: 500">补录汇率</a>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px">
+      <div style="flex: 1 1 420px; min-width: 0">
+        <div style="font-size: 13px; color: #424B50">项目成本 / PAY</div>
+        <h1 style="margin: 4px 0 0; font-family: 'Noto Serif SC', serif; font-size: 28px">支付系统重构</h1>
+      </div>
+      <div style="font-size: 13px; color: #424B50">预算币种 USD · 成员以 CNY、JPY 计薪，按记录日汇率换算</div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px">
+      <div style="flex: 2 1 420px; padding: 20px; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px">
+          <div><div style="font-size: 13px; color: #424B50">已发生人工成本</div><div style="margin-top: 4px; font-size: 28px; font-weight: 700">USD 45,600</div></div>
+          <div style="text-align: right"><div style="font-size: 13px; color: #424B50">人工预算</div><div style="margin-top: 4px; font-size: 20px">USD 60,000</div></div>
+        </div>
+        <div style="position: relative; margin-top: 16px; height: 14px; border-radius: 7px; background: #F5F0E6">
+          <div style="width: 76%; height: 14px; border-radius: 7px; background: #2E5D4A"></div>
+          <div aria-hidden="true" style="position: absolute; top: -4px; left: 50%; width: 2px; height: 22px; background: #2A3C5C"></div>
+          <div aria-hidden="true" style="position: absolute; top: -4px; left: 80%; width: 2px; height: 22px; background: #806332"></div>
+          <div aria-hidden="true" style="position: absolute; top: -4px; left: calc(100% - 2px); width: 2px; height: 22px; background: #9E2F2F"></div>
+        </div>
+        <div style="position: relative; height: 18px; margin-top: 6px; font-size: 12px">
+          <span style="position: absolute; left: calc(50% - 14px); color: #2A3C5C">50%</span>
+          <span style="position: absolute; left: calc(80% - 14px); color: #806332">80%</span>
+          <span style="position: absolute; right: 0; color: #9E2F2F">USD 70k</span>
+        </div>
+        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 24px; font-size: 13px; color: #3B3A3E">
+          <span>已用 76%</span><span>预测完工成本 USD 63,900（剩余估时 × 混合费率）</span>
+        </div>
+      </div>
+      <div style="flex: 1 1 280px; padding: 20px; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px">
+        <div style="font-size: 13px; color: #424B50">本月成本构成（前 4 人）</div>
+        <ul style="margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+          <li style="display: flex; justify-content: space-between"><span>王磊 · CNY 200/时</span><span>USD 3,370</span></li>
+          <li style="display: flex; justify-content: space-between"><span>赵敏 · CNY 180/时</span><span>USD 2,280</span></li>
+          <li style="display: flex; justify-content: space-between"><span>陈默 · CNY 320/时</span><span>USD 1,440</span></li>
+          <li style="display: flex; justify-content: space-between"><span>佐藤 · JPY 6,500/时</span><span>USD 1,310</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <section aria-label="成本阈值" style="background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <h2 style="margin: 0; flex: 1 1 auto; font-size: 17px">成本阈值</h2>
+        <button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #2E5D4A; color: #FFFEF8; font: inherit; font-weight: 500">+ 添加阈值</button>
+      </div>
+      <div style="overflow-x: auto">
+        <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+          <thead>
+            <tr style="text-align: left; font-size: 13px; color: #424B50; border-bottom: 1px solid #DAD4CB">
+              <th scope="col" style="padding: 8px; font-weight: 500">级别</th>
+              <th scope="col" style="padding: 8px; font-weight: 500">条件</th>
+              <th scope="col" style="padding: 8px; font-weight: 500">通知</th>
+              <th scope="col" style="padding: 8px; font-weight: 500">状态</th>
+              <th scope="col" style="padding: 8px; font-weight: 500"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">操作</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #F5F0E6">
+              <td style="padding: 12px 8px"><span style="padding: 2px 8px; border-radius: 6px; background: #E6F2FF; color: #2A3C5C">提示</span></td>
+              <td style="padding: 12px 8px">人工成本 ≥ 预算的 50%</td>
+              <td style="padding: 12px 8px">财务、项目经理</td>
+              <td style="padding: 12px 8px; color: #2A3C5C">10月28日已触发 · 已确认</td>
+              <td style="padding: 12px 8px"><button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #BBB5AC; border-radius: 6px; background: #FFFEF8; color: #1D1B1C; font: inherit">编辑</button></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #F5F0E6">
+              <td style="padding: 12px 8px"><span style="padding: 2px 8px; border-radius: 6px; background: #F9F4DC; color: #806332">预警</span></td>
+              <td style="padding: 12px 8px">人工成本 ≥ 预算的 80%</td>
+              <td style="padding: 12px 8px">财务、项目经理、研发部负责人</td>
+              <td style="padding: 12px 8px; color: #3B3A3E">未触发 · 距离 USD 2,400</td>
+              <td style="padding: 12px 8px"><button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #BBB5AC; border-radius: 6px; background: #FFFEF8; color: #1D1B1C; font: inherit">编辑</button></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #F5F0E6">
+              <td style="padding: 12px 8px"><span style="padding: 2px 8px; border-radius: 6px; background: #F2CAC9; color: #9E2F2F">严重</span></td>
+              <td style="padding: 12px 8px">人工成本 &gt; USD 70,000</td>
+              <td style="padding: 12px 8px">财务、管理员</td>
+              <td style="padding: 12px 8px; color: #3B3A3E">未触发</td>
+              <td style="padding: 12px 8px"><button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #BBB5AC; border-radius: 6px; background: #FFFEF8; color: #1D1B1C; font: inherit">编辑</button></td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 8px"><span style="padding: 2px 8px; border-radius: 6px; background: #F9F4DC; color: #806332">预警</span></td>
+              <td style="padding: 12px 8px">预测完工成本 ≥ 预算的 100%</td>
+              <td style="padding: 12px 8px">财务、项目经理</td>
+              <td style="padding: 12px 8px; color: #806332; font-weight: 500">11月4日触发 · 待确认</td>
+              <td style="padding: 12px 8px"><button type="button" style="height: 32px; padding: 0 10px; border: 1px solid #BBB5AC; border-radius: 6px; background: #FFFEF8; color: #1D1B1C; font: inherit">编辑</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #424B50">每条阈值在越线时只通知一次；成本回落到线下会自动关闭，再次越线才重新通知。</p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":880}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

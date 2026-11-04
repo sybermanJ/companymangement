@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>转交审批</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F8F4ED}
+a{color:#2E5D4A}a:hover{color:#1A3B2E}
+</style>
+</helmet>
+<div style="min-height: 780px; background: #F8F4ED; color: #1D1B1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 32px; background: #FFFEF8; border-bottom: 1px solid #DAD4CB">
+    <div style="font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; color: #2E5D4A">衡图</div>
+    <h1 style="margin: 0; font-size: 16px; font-weight: 500; color: #3B3A3E">通知中心 · 待我审批</h1>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 24px 32px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+    <nav aria-label="待审批列表" style="flex: 1 1 300px; max-width: 360px; display: flex; flex-direction: column; gap: 8px">
+      <a href="#" style="display: block; padding: 14px 16px; border: 1px solid #2E5D4A; border-radius: 12px; background: #EEF7F2; color: #1D1B1C; text-decoration: none">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #424B50"><span>跨部门转交</span><span>12 分钟前</span></div>
+        <div style="margin-top: 4px; font-weight: 500">PAY-142 订单服务改造</div>
+        <div style="margin-top: 2px; font-size: 13px; color: #3B3A3E">王磊（研发部）→ 孙悦（质量部）</div>
+      </a>
+      <a href="#" style="display: block; padding: 14px 16px; border: 1px solid #DAD4CB; border-radius: 12px; background: #FFFEF8; color: #1D1B1C; text-decoration: none">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #424B50"><span>跨部门转交</span><span>2 小时前</span></div>
+        <div style="margin-top: 4px; font-weight: 500">CRM-77 客户导入工具</div>
+        <div style="margin-top: 2px; font-size: 13px; color: #3B3A3E">周宁（研发部）→ 孙悦（质量部）</div>
+      </a>
+      <a href="#" style="display: block; padding: 14px 16px; border: 1px solid #DAD4CB; border-radius: 12px; background: #FFFEF8; color: #1D1B1C; text-decoration: none">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #806332"><span>请求 · 已等待 26 小时</span><span>昨天</span></div>
+        <div style="margin-top: 4px; font-weight: 500">REQ-31 协助复现线上问题</div>
+        <div style="margin-top: 2px; font-size: 13px; color: #3B3A3E">林晓（产品部）→ 何静（质量部）</div>
+      </a>
+    </nav>
+
+    <section aria-label="审批详情" style="flex: 999 1 560px; min-width: 0; background: #FFFEF8; border: 1px solid #DAD4CB; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+      <div>
+        <div style="font-size: 13px; color: #424B50">支付系统重构 / 开发 / PAY-142</div>
+        <h2 style="margin: 4px 0 0; font-family: 'Noto Serif SC', serif; font-size: 24px">订单服务改造</h2>
+        <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px">
+          <span style="padding: 2px 8px; border-radius: 6px; background: #F9F4DC; color: #806332">等待审批：需质量部负责人批准</span>
+          <span style="padding: 2px 8px; border-radius: 6px; background: #F5F0E6; color: #3B3A3E">截止 11月12日</span>
+          <span style="padding: 2px 8px; border-radius: 6px; background: #F5F0E6; color: #3B3A3E">预估剩余 18 小时</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px">
+        <div style="flex: 1 1 260px; padding: 16px; border-radius: 10px; background: #F5F0E6">
+          <div style="font-size: 13px; color: #424B50">转交原因（王磊）</div>
+          <p style="margin: 6px 0 0; line-height: 1.6">开发已完成，剩余工作是回调幂等的边界场景验证，需要测试同学按用例跑一遍并补充压测。</p>
+        </div>
+        <div style="flex: 1 1 220px; padding: 16px; border-radius: 10px; background: #F5F0E6">
+          <div style="font-size: 13px; color: #424B50">孙悦本周负荷</div>
+          <div style="margin-top: 6px; font-size: 20px; font-weight: 700">36 <span style="font-size: 13px; font-weight: 400; color: #424B50">/ 40 小时</span></div>
+          <div style="margin-top: 8px; height: 8px; border-radius: 4px; background: #FFFEF8"><div style="width: 90%; height: 8px; border-radius: 4px; background: #806332"></div></div>
+          <div style="margin-top: 6px; font-size: 12px; color: #806332">接受后预计超出 14 小时</div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="margin: 0 0 10px; font-size: 15px">流转记录</h3>
+        <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0">
+          <li style="display: flex; gap: 12px"><div aria-hidden="true" style="flex: 0 0 12px; display: flex; flex-direction: column; align-items: center"><span style="width: 10px; height: 10px; border-radius: 5px; background: #BBB5AC; margin-top: 5px"></span><span style="flex: 1 1 auto; width: 2px; background: #DAD4CB"></span></div><div style="padding-bottom: 14px"><div>林晓 创建并指派给 王磊</div><div style="font-size: 12px; color: #424B50">10月26日 09:12</div></div></li>
+          <li style="display: flex; gap: 12px"><div aria-hidden="true" style="flex: 0 0 12px; display: flex; flex-direction: column; align-items: center"><span style="width: 10px; height: 10px; border-radius: 5px; background: #BBB5AC; margin-top: 5px"></span><span style="flex: 1 1 auto; width: 2px; background: #DAD4CB"></span></div><div style="padding-bottom: 14px"><div>王磊 → 赵敏（同部门，已接受）</div><div style="font-size: 12px; color: #424B50">10月29日 15:40 · 原因：对账字段需要她确认</div></div></li>
+          <li style="display: flex; gap: 12px"><div aria-hidden="true" style="flex: 0 0 12px; display: flex; flex-direction: column; align-items: center"><span style="width: 10px; height: 10px; border-radius: 5px; background: #BBB5AC; margin-top: 5px"></span><span style="flex: 1 1 auto; width: 2px; background: #DAD4CB"></span></div><div style="padding-bottom: 14px"><div>赵敏 退回 王磊</div><div style="font-size: 12px; color: #424B50">10月30日 11:05 · 赵敏记录 5 小时，留在她名下</div></div></li>
+          <li style="display: flex; gap: 12px"><div aria-hidden="true" style="flex: 0 0 12px; display: flex; flex-direction: column; align-items: center"><span style="width: 10px; height: 10px; border-radius: 5px; background: #806332; margin-top: 5px"></span></div><div><div style="font-weight: 500">王磊 → 孙悦（跨部门，等待您审批）</div><div style="font-size: 12px; color: #424B50">今天 13:32</div></div></li>
+        </ol>
+      </div>
+
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #424B50">审批意见（驳回时必填）
+        <textarea rows="2" style="padding: 10px 12px; border: 1px solid #BBB5AC; border-radius: 10px; background: #FFFEF8; color: #1D1B1C; font: inherit; resize: vertical"></textarea>
+      </label>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+        <button type="button" style="height: 44px; padding: 0 24px; border: 0; border-radius: 10px; background: #2E5D4A; color: #FFFEF8; font: inherit; font-weight: 700">批准转交</button>
+        <button type="button" style="height: 44px; padding: 0 24px; border: 1px solid #9E2F2F; border-radius: 10px; background: #FFFEF8; color: #9E2F2F; font: inherit">驳回</button>
+        <button type="button" style="height: 44px; padding: 0 16px; border: 0; background: transparent; color: #3B3A3E; font: inherit">改派给本部门其他人…</button>
+        <span style="font-size: 12px; color: #424B50">批准后由孙悦确认接受；已记录的工时不随转交移动。</span>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":780}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
