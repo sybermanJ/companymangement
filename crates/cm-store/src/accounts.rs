@@ -350,3 +350,37 @@ pub async fn set_department_head(
     }
     Ok(())
 }
+
+/// Change a member's Admin/Finance flags. The last active Admin cannot be demoted.
+pub async fn set_member_flags(
+    t: &mut TenantTx,
+    user_id: Uuid,
+    is_admin: bool,
+    is_finance: bool,
+) -> Result<()> {
+    if !is_admin {
+        let (others,): (i64,) = sqlx::query_as(
+            "SELECT count(*) FROM membership WHERE tenant_id = $1 AND is_admin AND status = 'active' AND user_id <> $2",
+        )
+        .bind(t.tenant_id)
+        .bind(user_id)
+        .fetch_one(&mut *t.tx)
+        .await?;
+        if others == 0 {
+            return Err(StoreError::Invalid("the company needs at least one Admin"));
+        }
+    }
+    let r = sqlx::query(
+        "UPDATE membership SET is_admin = $3, is_finance = $4 WHERE tenant_id = $1 AND user_id = $2 AND status = 'active'",
+    )
+    .bind(t.tenant_id)
+    .bind(user_id)
+    .bind(is_admin)
+    .bind(is_finance)
+    .execute(&mut *t.tx)
+    .await?;
+    if r.rows_affected() == 0 {
+        return Err(StoreError::NotFound);
+    }
+    Ok(())
+}

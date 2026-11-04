@@ -91,3 +91,29 @@ pub async fn set_head(
     t.commit().await?;
     Ok(StatusCode::NO_CONTENT)
 }
+
+#[derive(Deserialize)]
+pub struct Flags {
+    is_admin: bool,
+    is_finance: bool,
+}
+
+pub async fn set_flags(
+    State(s): State<AppState>,
+    session: Session,
+    Path(id): Path<Uuid>,
+    Json(b): Json<Flags>,
+) -> Result<impl IntoResponse, ApiError> {
+    let mut t = TenantTx::begin(&s.pool, session.tenant_id, Some(session.user_id)).await?;
+    crate::require_admin(&mut t, session.user_id).await?;
+    acc::set_member_flags(&mut t, id, b.is_admin, b.is_finance).await?;
+    cm_store::finance::audit(
+        &mut t,
+        session.user_id,
+        "member.flags",
+        serde_json::json!({ "user": id, "is_admin": b.is_admin, "is_finance": b.is_finance }),
+    )
+    .await?;
+    t.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}

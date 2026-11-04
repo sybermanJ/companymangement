@@ -5,8 +5,13 @@ mod accounts;
 mod admin;
 mod auth;
 mod error;
+mod finance;
+mod flow;
+mod git;
+pub mod jobs;
 mod limiter;
 pub mod mail;
+mod reports;
 pub mod storage;
 mod work;
 
@@ -31,6 +36,8 @@ pub struct AppState {
     pub base_url: String,
     pub limiter: std::sync::Arc<limiter::LoginLimiter>,
     pub storage: storage::Storage,
+    /// User ids with new notifications (fed by `jobs::spawn_notify_listener`).
+    pub notify: tokio::sync::broadcast::Sender<String>,
 }
 
 impl AppState {
@@ -41,6 +48,7 @@ impl AppState {
             base_url: base_url.into().trim_end_matches('/').to_owned(),
             limiter: Default::default(),
             storage: storage::Storage::new(std::env::temp_dir().join("cm-objects")),
+            notify: tokio::sync::broadcast::channel(256).0,
         }
     }
 }
@@ -63,6 +71,7 @@ pub fn router(state: AppState) -> Router {
         .route("/invitations", post(accounts::invite))
         .route("/invitations/accept", post(accounts::accept_invite))
         .route("/members", get(admin::list_members))
+        .route("/members/{id}/flags", axum::routing::put(admin::set_flags))
         .route("/roles", get(admin::list_roles).post(admin::create_role))
         .route("/role-assignments", post(admin::assign_role))
         .route(
@@ -98,10 +107,71 @@ pub fn router(state: AppState) -> Router {
         .route("/my/items", get(work::my_items))
         .route("/timer/start", post(work::start_timer))
         .route("/timer/stop", post(work::stop_timer))
+        // phase 2: routine work, deliverables, requests, hand-offs, inbox
+        .route(
+            "/routines",
+            get(flow::list_templates).post(flow::create_template),
+        )
+        .route("/routines/{id}/active", post(flow::set_template_active))
+        .route("/routines/generate", post(flow::generate))
+        .route("/items/{id}/claim", post(flow::claim))
+        .route("/items/{id}/deliverables", post(flow::add_spec))
+        .route("/items/{id}/submissions", post(flow::submit))
+        .route("/items/{id}/handoffs", post(flow::request_handoff))
+        .route("/items/{id}/return", post(flow::return_item))
+        .route("/items/{id}/commits", post(git::link_manual))
+        .route("/handoffs/{id}/decide", post(flow::decide_handoff))
+        .route("/requests", post(flow::create_request))
+        .route("/inbox", get(flow::inbox))
+        .route("/notifications/read", post(flow::mark_read))
+        .route("/notifications/stream", get(flow::stream))
+        // phase 3: finance
+        .route("/finance/overview", get(finance::overview))
+        .route("/finance/projects/{id}", get(finance::project))
+        .route(
+            "/finance/projects/{id}/budget",
+            axum::routing::put(finance::set_budget),
+        )
+        .route(
+            "/finance/projects/{id}/thresholds",
+            post(finance::create_threshold),
+        )
+        .route(
+            "/finance/thresholds/{id}",
+            axum::routing::delete(finance::delete_threshold),
+        )
+        .route(
+            "/finance/rates",
+            get(finance::list_rates).post(finance::add_rate),
+        )
+        .route("/finance/fx", get(finance::list_fx).post(finance::add_fx))
+        .route("/finance/recalculate", post(finance::recalculate))
+        .route(
+            "/finance/periods",
+            get(finance::list_periods).post(finance::close_period),
+        )
+        .route("/finance/audit", get(finance::audit))
+        .route("/alerts/{id}/ack", post(finance::ack_alert))
+        .route("/projects/{id}/alerts", get(finance::project_alerts_hours))
+        .route("/export/timesheet.csv", get(finance::export_csv))
+        // phase 4: overview and Git
+        .route("/reports/portfolio", get(reports::portfolio))
+        .route("/reports/workload", get(reports::workload))
+        .route("/reports/people/{id}", get(reports::person))
+        .route("/reports/handoffs", get(flow::handoff_stats))
+        .route("/git/repos", get(git::list).post(git::create))
+        .route("/git/repos/{id}", axum::routing::delete(git::delete))
+        .route("/git/identities", post(git::set_identity))
         .layer(middleware::from_fn(csrf_guard));
+    // Webhooks come from Git servers, not browsers: no session, no CSRF
+    // header; they are authenticated by their signature instead.
+    let hooks = Router::new().route(
+        "/hooks/git/{repo}",
+        post(git::webhook).layer(axum::extract::DefaultBodyLimit::max(5 * 1024 * 1024)),
+    );
     Router::new()
         .route("/healthz", get(|| async { "ok" }))
-        .nest("/api/v1", api)
+        .nest("/api/v1", api.merge(hooks))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .with_state(state)
 }

@@ -61,3 +61,18 @@ Verification, reset and invitation emails are written to `outbox_email` in the s
 
 ## D19 — Gantt is our own Vue component (2026-11-04)
 Instead of embedding Frappe Gantt, `web/src/pages/Gantt.vue` draws the chart: a task tree on the left (as in the approved mockup), day/week scales, dependency arrows, drag to move or resize with day snapping, and the same design tokens in light and dark. It is open-source code in this repo (Ricky's answer 9), has no third-party runtime dependency, and keeps item keys, holders and progress labels in one row.
+
+## D20 — Routine recurrence: daily, weekdays, or chosen weekdays (2026-11-04)
+Instead of full RFC 5545 RRULEs, a routine template fires daily, Monday–Friday, or on chosen ISO weekdays. This covers daily and weekly routine work, is easy to set in the UI, and keeps generation simple and idempotent (unique per template, day and holder). Generation runs every 15 minutes for today and tomorrow in each company's time zone, and immediately when a template is created.
+
+## D21 — Cost thresholds are evaluated in the same transaction as the change (2026-11-04)
+Every saved or deleted work log, rate, exchange rate, budget change, recalculation and new threshold re-evaluates the affected projects inside the same database transaction. That gives the same guarantee the plan's outbox gave (no change without evaluation) without a separate queue. "Fire once per crossing" is also enforced by a unique index on unresolved alerts per threshold.
+
+## D22 — Notifications: inbox, live count over SSE, email for decisions (2026-11-04)
+Notifications are rows in the built-in inbox. A browser tab keeps a server-sent-events stream open and gets the unread count pushed through PostgreSQL LISTEN/NOTIFY. Hand-off approvals and offers, and cost alerts, are also emailed through the outbox. Browser Web Push is deferred: it needs VAPID keys and a service worker, and the major push services are unreliable from mainland China.
+
+## D23 — Git through signed webhooks for every provider (2026-11-04)
+GitHub, Gitea/Forgejo, GitLab and other servers all connect with a per-repository webhook URL and secret (GitHub/Gitea HMAC-SHA256 signatures, GitLab token). This needs no GitHub App registration and works the same for self-hosted servers. Commits link to items by key in the message or branch name; authors map to people only through Admin-confirmed email mappings. A manual "link commit" action covers servers that cannot reach us. The GitHub App and polling mode are left for later.
+
+## D24 — Exports are CSV (2026-11-04)
+Timesheet and cost exports are UTF-8 CSV with a BOM, which Excel and WPS open directly with Chinese text intact. Formula-like cells are neutralised. XLSX is not needed for v1.

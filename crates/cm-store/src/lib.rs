@@ -9,6 +9,10 @@ use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 pub mod accounts;
+pub mod finance;
+pub mod flow;
+pub mod git;
+pub mod reports;
 pub mod work;
 
 pub use sqlx;

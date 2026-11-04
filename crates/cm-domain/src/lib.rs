@@ -6,8 +6,10 @@
 
 pub mod deliverable;
 pub mod fx;
+pub mod gitref;
 pub mod handoff;
 pub mod money;
+pub mod recurrence;
 pub mod threshold;
 pub mod work_item;
 

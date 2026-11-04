@@ -24,7 +24,9 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("MAIL_FROM").unwrap_or_else(|_| "Hengtu <no-reply@localhost>".into());
     cm_server::mail::spawn_worker(pool.clone(), std::env::var("SMTP_URL").ok(), mail_from);
 
-    let mut state = cm_server::AppState::new(pool, cookie_secure, base_url);
+    cm_server::jobs::spawn_scheduler(pool.clone());
+    let mut state = cm_server::AppState::new(pool.clone(), cookie_secure, base_url);
+    cm_server::jobs::spawn_notify_listener(pool, state.notify.clone());
     state.storage = cm_server::storage::Storage::new(
         std::env::var("STORAGE_DIR").unwrap_or_else(|_| "data/objects".into()),
     );

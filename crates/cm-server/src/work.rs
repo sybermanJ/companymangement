@@ -26,13 +26,19 @@ where
     Option::<T>::deserialize(d).map(Some)
 }
 
-struct Caller {
-    user: Uuid,
-    is_admin: bool,
-    is_finance: bool,
+pub(crate) struct Caller {
+    pub user: Uuid,
+    pub is_admin: bool,
+    pub is_finance: bool,
 }
 
-async fn begin(s: &AppState, session: &Session) -> Result<(TenantTx, Caller), ApiError> {
+impl Caller {
+    pub fn sees_money(&self) -> bool {
+        self.is_admin || self.is_finance
+    }
+}
+
+pub(crate) async fn begin(s: &AppState, session: &Session) -> Result<(TenantTx, Caller), ApiError> {
     let mut t = TenantTx::begin(&s.pool, session.tenant_id, Some(session.user_id)).await?;
     let (is_admin, is_finance) = cm_store::member_flags(&mut t, session.user_id).await?;
     Ok((
@@ -45,19 +51,64 @@ async fn begin(s: &AppState, session: &Session) -> Result<(TenantTx, Caller), Ap
     ))
 }
 
-fn can_manage(c: &Caller, p: &ProjectRow) -> bool {
+pub(crate) fn can_manage(c: &Caller, p: &ProjectRow) -> bool {
     c.is_admin || p.owner_id == c.user
 }
 
-/// Budget amounts are visible to Finance and Admins only (PMs see hours).
-fn project_json(c: &Caller, p: &ProjectRow) -> Value {
+/// Budget amounts are visible to Finance and Admins only (PMs see hours and
+/// the share of budget used).
+pub(crate) async fn project_json(
+    t: &mut TenantTx,
+    c: &Caller,
+    p: &ProjectRow,
+) -> Result<Value, ApiError> {
     let mut v = serde_json::to_value(p).unwrap_or(Value::Null);
-    if !(c.is_admin || c.is_finance) {
-        if let Some(o) = v.as_object_mut() {
+    let cost = cm_store::finance::project_cost(t, p.id).await?;
+    let open_alerts = cm_store::finance::list_alerts(t, Some(p.id), true)
+        .await?
+        .len();
+    if let Some(o) = v.as_object_mut() {
+        o.insert("budget_used_pct".into(), json!(cost.used_pct));
+        o.insert("open_alerts".into(), json!(open_alerts));
+        if c.sees_money() {
+            o.insert("cost".into(), json!(cost));
+        } else {
             o.remove("labour_budget_minor");
         }
     }
-    v
+    Ok(v)
+}
+
+/// Who may plan an item: the project's managers; for items outside projects,
+/// Admins, whoever asked for a request, the routine's author, and the
+/// holder's department head.
+pub(crate) async fn manage_item(
+    t: &mut TenantTx,
+    c: &Caller,
+    item: &w::ItemRow,
+) -> Result<bool, ApiError> {
+    if let Some(pid) = item.project_id {
+        if can_manage(c, &w::get_project(t, pid).await?) {
+            return Ok(true);
+        }
+    }
+    if c.is_admin || item.requested_by == Some(c.user) {
+        return Ok(true);
+    }
+    if let Some(tpl) = item.routine_template_id {
+        if cm_store::flow::get_template(t, tpl).await?.created_by == c.user {
+            return Ok(true);
+        }
+    }
+    if let Some(h) = item.holder_user_id {
+        if let Some(d) = cm_store::flow::home_department(t, h).await? {
+            return Ok(cm_store::flow::heads_department(t, c.user, d).await?);
+        }
+    }
+    if let (Some(_), Some(d)) = (item.target_role_id, item.target_department_id) {
+        return Ok(cm_store::flow::heads_department(t, c.user, d).await?);
+    }
+    Ok(false)
 }
 
 // ---------- projects ----------
@@ -68,10 +119,12 @@ pub async fn list_projects(
 ) -> Result<impl IntoResponse, ApiError> {
     let (mut t, c) = begin(&s, &session).await?;
     let rows = w::list_projects(&mut t).await?;
+    let mut out = Vec::with_capacity(rows.len());
+    for p in &rows {
+        out.push(project_json(&mut t, &c, p).await?);
+    }
     t.commit().await?;
-    Ok(Json(
-        rows.iter().map(|p| project_json(&c, p)).collect::<Vec<_>>(),
-    ))
+    Ok(Json(out))
 }
 
 #[derive(Deserialize)]
@@ -139,8 +192,9 @@ pub async fn create_project(
         },
     )
     .await?;
+    let v = project_json(&mut t, &c, &p).await?;
     t.commit().await?;
-    Ok((StatusCode::CREATED, Json(project_json(&c, &p))))
+    Ok((StatusCode::CREATED, Json(v)))
 }
 
 pub async fn get_project(
@@ -152,9 +206,10 @@ pub async fn get_project(
     let p = w::get_project(&mut t, id).await?;
     let items = w::list_items(&mut t, id).await?;
     let deps = w::list_dependencies(&mut t, id).await?;
+    let pj = project_json(&mut t, &c, &p).await?;
     t.commit().await?;
     Ok(Json(
-        json!({ "project": project_json(&c, &p), "items": items, "dependencies": deps, "can_manage": can_manage(&c, &p) }),
+        json!({ "project": pj, "items": items, "dependencies": deps, "can_manage": can_manage(&c, &p) }),
     ))
 }
 
@@ -247,14 +302,24 @@ pub async fn get_item(
     let logs = w::list_logs(&mut t, id).await?;
     let attachments = w::list_attachments(&mut t, id).await?;
     let events = w::list_events(&mut t, id).await?;
-    let manage = match item.project_id {
-        Some(pid) => can_manage(&c, &w::get_project(&mut t, pid).await?),
-        None => c.is_admin,
-    };
+    let manage = manage_item(&mut t, &c, &item).await?;
+    let specs = cm_store::flow::item_specs(&mut t, &item).await?;
+    let submissions = cm_store::flow::list_submissions(&mut t, id).await?;
+    let handoffs = cm_store::flow::list_handoffs(&mut t, id).await?;
+    let commits = cm_store::git::item_commits(&mut t, id).await?;
+    let can_reassign = cm_store::flow::may_reassign(&mut t, c.user, c.is_admin, &item).await?;
+    let can_return = item.holder_user_id == Some(c.user)
+        && handoffs
+            .iter()
+            .rev()
+            .find(|h| h.state == "accepted")
+            .is_some_and(|h| h.to_user == c.user);
     t.commit().await?;
-    Ok(Json(
-        json!({ "item": item, "logs": logs, "attachments": attachments, "events": events, "can_manage": manage }),
-    ))
+    Ok(Json(json!({
+        "item": item, "logs": logs, "attachments": attachments, "events": events, "can_manage": manage,
+        "specs": specs, "submissions": submissions, "handoffs": handoffs, "commits": commits,
+        "can_reassign": can_reassign, "can_return": can_return,
+    })))
 }
 
 #[derive(Deserialize)]
@@ -290,10 +355,7 @@ pub async fn patch_item(
     }
     let (mut t, c) = begin(&s, &session).await?;
     let item = w::get_item(&mut t, id).await?;
-    let manage = match item.project_id {
-        Some(pid) => can_manage(&c, &w::get_project(&mut t, pid).await?),
-        None => c.is_admin,
-    };
+    let manage = manage_item(&mut t, &c, &item).await?;
     let is_holder = item.holder_user_id == Some(c.user);
     // Holders may update progress and the description; planning fields need a manager.
     let planning = b.title.is_some()
@@ -329,6 +391,9 @@ pub struct StatusBody {
     version: i32,
     status: String,
     note: Option<String>,
+    /// A manager may close an item with missing deliverables, giving a reason.
+    #[serde(default)]
+    override_deliverables: bool,
 }
 
 pub async fn set_status(
@@ -340,17 +405,23 @@ pub async fn set_status(
     let to = w::parse_status(&b.status).ok_or_else(|| ApiError::bad_request("unknown status"))?;
     let (mut t, c) = begin(&s, &session).await?;
     let item = w::get_item(&mut t, id).await?;
-    let manage = match item.project_id {
-        Some(pid) => can_manage(&c, &w::get_project(&mut t, pid).await?),
-        None => c.is_admin,
-    };
+    let manage = manage_item(&mut t, &c, &item).await?;
     if !(manage || item.holder_user_id == Some(c.user)) {
         return Err(ApiError::forbidden());
     }
     let from =
         w::parse_status(&item.status).ok_or_else(|| ApiError::bad_request("unknown status"))?;
-    // Deliverable checks arrive with routine work in phase 2.
-    wi::transition(from, to, vec![], false).map_err(|e| {
+    let overriding = b.override_deliverables && manage;
+    if b.override_deliverables && !manage {
+        return Err(ApiError::forbidden());
+    }
+    if overriding && b.note.as_deref().is_none_or(|n| n.trim().is_empty()) {
+        return Err(ApiError::bad_request(
+            "give a reason for closing without the deliverables",
+        ));
+    }
+    let shortfalls = cm_store::flow::shortfalls(&mut t, &item).await?;
+    wi::transition(from, to, shortfalls, overriding).map_err(|e| {
         ApiError::new(
             StatusCode::UNPROCESSABLE_ENTITY,
             "invalid_transition",
@@ -369,8 +440,12 @@ pub async fn my_items(
     let (mut t, c) = begin(&s, &session).await?;
     let rows = w::list_items_held_by(&mut t, c.user).await?;
     let timer = w::get_timer(&mut t, c.user).await?;
+    let claimable = cm_store::flow::claimable_items(&mut t, c.user).await?;
+    let sent = cm_store::flow::sent_handoffs(&mut t, c.user).await?;
     t.commit().await?;
-    Ok(Json(json!({ "items": rows, "timer": timer })))
+    Ok(Json(
+        json!({ "items": rows, "timer": timer, "claimable": claimable, "sent_handoffs": sent }),
+    ))
 }
 
 // ---------- dependencies ----------
@@ -573,6 +648,7 @@ pub async fn upload_attachment(
     mut form: Multipart,
 ) -> Result<impl IntoResponse, ApiError> {
     let mut work_log_id: Option<Uuid> = None;
+    let mut spec_id: Option<Uuid> = None;
     let mut uploaded = Vec::new();
     while let Some(field) = form
         .next_field()
@@ -589,6 +665,17 @@ pub async fn upload_attachment(
                     v.trim()
                         .parse()
                         .map_err(|_| ApiError::bad_request("bad work_log_id"))?,
+                );
+            }
+            Some("spec_id") => {
+                let v = field
+                    .text()
+                    .await
+                    .map_err(|e| ApiError::bad_request(e.to_string()))?;
+                spec_id = Some(
+                    v.trim()
+                        .parse()
+                        .map_err(|_| ApiError::bad_request("bad spec_id"))?,
                 );
             }
             Some("file") => {
@@ -648,6 +735,12 @@ pub async fn upload_attachment(
                 )
                 .await?,
             );
+        }
+        if let Some(spec) = spec_id {
+            for r in &rows {
+                cm_store::flow::submit(&mut t, c.user, item, spec, "", Some(r.id), work_log_id)
+                    .await?;
+            }
         }
         t.commit().await?;
         Ok(rows)

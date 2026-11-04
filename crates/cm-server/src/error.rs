@@ -44,6 +44,9 @@ impl From<StoreError> for ApiError {
             ),
             other => {
                 tracing::error!(error = %other, "store error");
+                if std::env::var_os("CM_DEBUG_ERRORS").is_some() {
+                    eprintln!("store error: {other}");
+                }
                 Self::new(
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "internal",

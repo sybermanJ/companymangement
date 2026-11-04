@@ -13,6 +13,7 @@ chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 cm-domain.workspace = true
+rust_decimal.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

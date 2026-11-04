@@ -44,7 +44,7 @@ fn kind_str(k: WorkItemKind) -> &'static str {
     }
 }
 
-async fn event(
+pub(crate) async fn event(
     t: &mut TenantTx,
     item: Uuid,
     actor: Uuid,
@@ -176,13 +176,23 @@ pub struct ItemRow {
     pub sort_order: i32,
     pub version: i32,
     pub logged_minutes: i64,
+    pub target_role_id: Option<Uuid>,
+    pub target_department_id: Option<Uuid>,
+    pub routine_template_id: Option<Uuid>,
+    pub occurrence_date: Option<NaiveDate>,
+    pub requested_by: Option<Uuid>,
+    pub handoff_count: i64,
+    pub open_handoff: Option<String>,
 }
 
-const ITEM_SELECT: &str = "
+pub(crate) const ITEM_SELECT: &str = "
     SELECT w.id, w.project_id, w.parent_id, w.kind, w.key, w.title, w.description, w.status,
            w.holder_user_id, u.display_name AS holder_name, w.planned_start, w.planned_end,
            w.estimate_minutes, w.progress_pct, w.sort_order, w.version,
-           COALESCE((SELECT sum(minutes) FROM work_log l WHERE l.work_item_id = w.id), 0)::bigint AS logged_minutes
+           COALESCE((SELECT sum(minutes) FROM work_log l WHERE l.work_item_id = w.id), 0)::bigint AS logged_minutes,
+           w.target_role_id, w.target_department_id, w.routine_template_id, w.occurrence_date, w.requested_by,
+           (SELECT count(*) FROM handoff h WHERE h.work_item_id = w.id AND h.state = 'accepted') AS handoff_count,
+           (SELECT h.state FROM handoff h WHERE h.work_item_id = w.id AND h.state IN ('pending_approval', 'pending_accept')) AS open_handoff
     FROM work_item w LEFT JOIN app_user u ON u.id = w.holder_user_id";
 
 pub struct NewItem<'a> {
@@ -531,6 +541,11 @@ pub async fn create_log(
     if matches!(it.status.as_str(), "cancelled") {
         return Err(StoreError::Invalid("cannot log work on a cancelled item"));
     }
+    if crate::finance::in_closed_period(t, started_at.date_naive()).await? {
+        return Err(StoreError::Invalid(
+            "that date is in a closed timesheet period",
+        ));
+    }
     let id = Uuid::now_v7();
     sqlx::query(
         "INSERT INTO work_log (id, tenant_id, work_item_id, user_id, started_at, minutes, description, source)
@@ -554,6 +569,10 @@ pub async fn create_log(
         json!({ "minutes": minutes, "log": id }),
     )
     .await?;
+    crate::finance::freeze_cost(t, id).await?;
+    if let Some(p) = it.project_id {
+        crate::finance::evaluate_project(t, p).await?;
+    }
     get_log(t, id).await
 }
 
@@ -595,6 +614,9 @@ pub async fn delete_own_log(t: &mut TenantTx, user: Uuid, id: Uuid) -> Result<()
         json!({ "minutes": log.minutes }),
     )
     .await?;
+    if let Some(p) = get_item(t, log.work_item_id).await?.project_id {
+        crate::finance::evaluate_project(t, p).await?;
+    }
     Ok(())
 }
 
