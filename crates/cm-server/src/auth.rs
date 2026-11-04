@@ -27,8 +27,17 @@ pub struct Session {
     pub tenant_id: Uuid,
 }
 
-fn token_hash(token: &str) -> Vec<u8> {
+pub(crate) fn token_hash(token: &str) -> Vec<u8> {
     Sha256::digest(token.as_bytes()).to_vec()
+}
+
+/// A fresh random token (hex) and its stored hash.
+pub(crate) fn new_token() -> (String, Vec<u8>) {
+    let mut raw = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut raw);
+    let token: String = raw.iter().map(|b| format!("{b:02x}")).collect();
+    let hash = token_hash(&token);
+    (token, hash)
 }
 
 impl FromRequestParts<AppState> for Session {
@@ -51,7 +60,7 @@ impl FromRequestParts<AppState> for Session {
     }
 }
 
-fn hash_password(pw: &str) -> Result<String, ApiError> {
+pub(crate) fn hash_password(pw: &str) -> Result<String, ApiError> {
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
         .hash_password(pw.as_bytes(), &salt)
@@ -71,7 +80,7 @@ fn verify_password(pw: &str, stored: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn valid_email(e: &str) -> bool {
+pub(crate) fn valid_email(e: &str) -> bool {
     let e = e.trim();
     e.len() <= 254
         && e.split_once('@')
@@ -117,11 +126,7 @@ pub async fn signup(
     if !valid_email(&b.email) {
         return Err(ApiError::bad_request("a valid email is required"));
     }
-    if b.password.chars().count() < 10 {
-        return Err(ApiError::bad_request(
-            "password must be at least 10 characters",
-        ));
-    }
+    check_password(&b.password)?;
     let ccy = cm_domain::Currency::parse(b.default_currency.trim())
         .map_err(|_| ApiError::bad_request("default_currency must be an ISO 4217 code"))?;
     let hash = hash_password(&b.password)?;
@@ -137,11 +142,19 @@ pub async fn signup(
         },
     )
     .await?;
-    // TODO(phase 0): send the verification email; until then email_verified stays false.
+    crate::accounts::send_verification(&s, user_id, b.email.trim()).await?;
     Ok((
         StatusCode::CREATED,
         Json(SignupResult { tenant_id, user_id }),
     ))
+}
+
+pub(crate) fn check_password(pw: &str) -> Result<(), ApiError> {
+    let n = pw.chars().count();
+    if !(10..=200).contains(&n) {
+        return Err(ApiError::bad_request("password must be 10–200 characters"));
+    }
+    Ok(())
 }
 
 #[derive(Deserialize)]
@@ -163,6 +176,13 @@ pub async fn login(
             "wrong email or password",
         )
     };
+    if s.limiter.is_blocked(&b.email) {
+        return Err(ApiError::new(
+            StatusCode::TOO_MANY_REQUESTS,
+            "too_many_attempts",
+            "too many failed attempts; try again in 15 minutes",
+        ));
+    }
     let user = cm_store::find_user_by_email(&s.pool, b.email.trim()).await?;
     // Always run one verification so response time does not reveal whether the email exists.
     const DUMMY: &str = "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzb21lc2FsdA$5F7aX6ZXv0b8q2k8yYk4c2uYw8l1kq4m0v2V7n0w9xY";
@@ -172,8 +192,12 @@ pub async fn login(
     );
     let user = match (ok, user) {
         (true, Some(u)) => u,
-        _ => return Err(bad()),
+        _ => {
+            s.limiter.record_failure(&b.email);
+            return Err(bad());
+        }
     };
+    s.limiter.clear(&b.email);
     let memberships = cm_store::memberships_of(&s.pool, user.id).await?;
     let tenant_id = match b.tenant_id {
         Some(t) if memberships.iter().any(|m| m.tenant_id == t) => t,
@@ -231,8 +255,13 @@ pub async fn me(
     session: Session,
 ) -> Result<impl IntoResponse, ApiError> {
     let memberships = cm_store::memberships_of(&s.pool, session.user_id).await?;
+    let (email, name, email_verified, _) =
+        cm_store::accounts::user_profile(&s.pool, session.user_id).await?;
     Ok(Json(serde_json::json!({
         "user_id": session.user_id,
+        "email": email,
+        "name": name,
+        "email_verified": email_verified,
         "tenant_id": session.tenant_id,
         "memberships": memberships,
     })))

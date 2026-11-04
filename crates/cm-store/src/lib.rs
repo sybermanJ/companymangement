@@ -8,6 +8,8 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
+pub mod accounts;
+
 pub use sqlx;
 
 #[derive(Debug, thiserror::Error)]
@@ -24,7 +26,7 @@ pub enum StoreError {
 
 pub type Result<T> = std::result::Result<T, StoreError>;
 
-fn map_unique(e: sqlx::Error, what: &'static str) -> StoreError {
+pub(crate) fn map_unique(e: sqlx::Error, what: &'static str) -> StoreError {
     match &e {
         sqlx::Error::Database(d) if d.is_unique_violation() => StoreError::Conflict(what),
         _ => StoreError::Db(e),

@@ -52,3 +52,9 @@ Finance-entered exchange rates per tenant; missing rate marks the entry *pending
 - Cross-department hand-off approver: the target's department head; the project PM may also approve project items.
 - Exchange rates: entered by Finance per tenant.
 - Product name and hosting region: not chosen yet. Working name **Hengtu (衡图)** is used in code and mockups only as a placeholder; region is configured at deploy time.
+
+## D17 — Mockups approved (2026-11-04, Ricky: "ok, do it")
+The five screens in docs/v1/mockups are the visual baseline for the web app.
+
+## D18 — Account emails via a transactional outbox (2026-11-04)
+Verification, reset and invitation emails are written to `outbox_email` in the same transaction as the change and delivered by a worker over SMTP (`SMTP_URL`); without SMTP they are logged. Tokens are single-use and stored only as SHA-256.

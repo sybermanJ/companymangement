@@ -1,8 +1,12 @@
 //! HTTP API. Handlers parse and authorise; every tenant query runs inside a
 //! `TenantTx` taken from the caller's session, never from request input.
 
+mod accounts;
+mod admin;
 mod auth;
 mod error;
+mod limiter;
+pub mod mail;
 
 use axum::extract::State;
 use axum::http::{Method, StatusCode};
@@ -21,6 +25,20 @@ pub use error::ApiError;
 pub struct AppState {
     pub pool: PgPool,
     pub cookie_secure: bool,
+    /// Public URL of the web app, used in email links (no trailing slash).
+    pub base_url: String,
+    pub limiter: std::sync::Arc<limiter::LoginLimiter>,
+}
+
+impl AppState {
+    pub fn new(pool: PgPool, cookie_secure: bool, base_url: impl Into<String>) -> Self {
+        Self {
+            pool,
+            cookie_secure,
+            base_url: base_url.into().trim_end_matches('/').to_owned(),
+            limiter: Default::default(),
+        }
+    }
 }
 
 pub const CSRF_HEADER: &str = "x-requested-with";
@@ -31,9 +49,25 @@ pub fn router(state: AppState) -> Router {
         .route("/login", post(auth::login))
         .route("/logout", post(auth::logout))
         .route("/me", get(auth::me))
+        .route("/verify-email", post(accounts::verify_email))
+        .route("/verify-email/resend", post(accounts::resend_verification))
+        .route(
+            "/password-reset/request",
+            post(accounts::request_password_reset),
+        )
+        .route("/password-reset/confirm", post(accounts::reset_password))
+        .route("/invitations", post(accounts::invite))
+        .route("/invitations/accept", post(accounts::accept_invite))
+        .route("/members", get(admin::list_members))
+        .route("/roles", get(admin::list_roles).post(admin::create_role))
+        .route("/role-assignments", post(admin::assign_role))
         .route(
             "/departments",
             get(list_departments).post(create_department),
+        )
+        .route(
+            "/departments/{id}/head",
+            axum::routing::put(admin::set_head),
         )
         .layer(middleware::from_fn(csrf_guard));
     Router::new()
@@ -85,11 +119,17 @@ async fn create_department(
         return Err(ApiError::bad_request("name must be 1–100 characters"));
     }
     let mut t = TenantTx::begin(&s.pool, session.tenant_id, Some(session.user_id)).await?;
-    let (is_admin, _) = cm_store::member_flags(&mut t, session.user_id).await?;
-    if !is_admin {
-        return Err(ApiError::forbidden());
-    }
+    require_admin(&mut t, session.user_id).await?;
     let row = cm_store::create_department(&mut t, name, body.parent_id, body.head_user_id).await?;
     t.commit().await?;
     Ok((StatusCode::CREATED, Json(row)))
+}
+
+pub(crate) async fn require_admin(t: &mut TenantTx, user_id: Uuid) -> Result<(), ApiError> {
+    let (is_admin, _) = cm_store::member_flags(t, user_id).await?;
+    if is_admin {
+        Ok(())
+    } else {
+        Err(ApiError::forbidden())
+    }
 }
