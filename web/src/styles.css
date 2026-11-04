@@ -1,0 +1,51 @@
+/* 鉴色 design tokens (series standard). Components use semantic tokens only. */
+:root {
+  --bg: #F8F4ED; --surface: #FFFEF8; --inset: #F5F0E6;          /* 汉白玉 象牙白 米白 */
+  --line: #DAD4CB; --line-strong: #BBB5AC;                      /* 浅灰 铅灰 */
+  --text: #1D1B1C; --text-2: #3B3A3E; --text-3: #424B50;        /* 墨色 松烟墨 鸦青 */
+  --accent: #2E5D4A; --accent-soft: #EEF7F2; --on-accent: #FFFEF8; /* 苍筤 月白 象牙白 */
+  --ok: #2E5D4A; --ok-bg: #EEF7F2; --warn: #806332; --warn-bg: #F9F4DC;
+  --danger: #9E2F2F; --danger-bg: #F2CAC9; --info: #2A3C5C; --info-bg: #E6F2FF;
+  --font-sans: 'Noto Sans SC', 'Noto Sans TC', 'Noto Sans JP', system-ui, sans-serif;
+  --font-serif: 'Noto Serif SC', 'Noto Serif TC', 'Noto Serif JP', serif;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #1A1A1A; --surface: #2E2E2E; --inset: #3B3A3E;          /* 玄色 墨韵黑 松烟墨 */
+  --line: #867E76; --line-strong: #A49C93;                      /* 瓦灰 中灰 */
+  --text: #F8F4ED; --text-2: #E4DFD7; --text-3: #BBB5AC;        /* 汉白玉 珍珠灰 铅灰 */
+  --accent: #7BC092; --accent-soft: #1A3B2E; --on-accent: #1A1A1A; /* 梅子青 墨绿 玄色 */
+  --ok: #7BC092; --ok-bg: #1A3B2E; --warn: #F8C471; --warn-bg: #4D4030;
+  --danger: #F2B9B2; --danger-bg: #481E1C; --info: #C3D7DF; --info-bg: #1A3A5F;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
+a { color: var(--accent); }
+h1, h2 { font-family: var(--font-serif); font-weight: 700; margin: 0; }
+h1 { font-size: 26px; }
+h2 { font-size: 18px; }
+.muted { color: var(--text-3); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-3); }
+input, select { height: 40px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; min-width: 0; }
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { height: 40px; padding: 0 16px; border-radius: 8px; font: inherit; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); }
+button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 500; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+.notice { padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+.notice.ok { background: var(--ok-bg); color: var(--ok); }
+.notice.warn { background: var(--warn-bg); color: var(--warn); }
+.notice.error { background: var(--danger-bg); color: var(--danger); }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 12px; background: var(--inset); color: var(--text-2); }
+.badge.accent { background: var(--accent-soft); color: var(--accent); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 500; font-size: 13px; color: var(--text-3); padding: 8px; border-bottom: 1px solid var(--line); }
+td { padding: 10px 8px; border-bottom: 1px solid var(--inset); overflow-wrap: anywhere; }
+.auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.auth-page .card { width: 100%; max-width: 420px; }
+.brand { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--accent); }

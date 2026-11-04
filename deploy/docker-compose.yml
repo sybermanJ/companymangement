@@ -32,6 +32,9 @@ services:
       DATABASE_URL: postgres://cm_app:cm_app_dev_only@postgres/cm
       BIND: 0.0.0.0:8080
       COOKIE_SECURE: "false"
+      APP_BASE_URL: http://localhost:8080
+      SMTP_URL: smtp://mailpit:1025
+      MAIL_FROM: "Hengtu <no-reply@hengtu.local>"
       RUST_LOG: info
     ports: ["8080:8080"]
     depends_on:
