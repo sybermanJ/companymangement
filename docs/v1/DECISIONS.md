@@ -47,3 +47,8 @@ PMs still see budget percentage used.
 Finance-entered exchange rates per tenant; missing rate marks the entry *pending FX*.
 
 ## D15 — Open-source Gantt: Frappe Gantt + vis-timeline behind our own Vue components (2026-11-04, Ricky)
+
+## D16 — Remaining defaults confirmed (2026-11-04, Ricky: "OK, do it")
+- Cross-department hand-off approver: the target's department head; the project PM may also approve project items.
+- Exchange rates: entered by Finance per tenant.
+- Product name and hosting region: not chosen yet. Working name **Hengtu (衡图)** is used in code and mockups only as a placeholder; region is configured at deploy time.

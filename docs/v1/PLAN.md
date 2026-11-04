@@ -241,11 +241,11 @@ Rough total for v1: 11–12 weeks of focused work for one full-stack developer w
 | 8 | Currency | Multi-currency projects | §4 `fx_rate`, §6 multi-currency, §7 |
 | 9 | Gantt library | Open source | §3 Frappe Gantt + vis-timeline |
 
-### Still open (my default stands unless you say otherwise)
+### Defaults confirmed by Ricky (2026-11-04)
 
 - **Who approves cross-department hand-offs:** the target's department head, with the project PM also allowed for project items. Alternative: the sender's head.
 - **Exchange rates:** entered by Finance per tenant (default), with an optional daily reference feed later.
-- **Product name and domain** for the SaaS, and whether the first pilot companies are in mainland China (affects hosting region, ICP filing and email deliverability).
+- **Product name and domain** for the SaaS, and whether the first pilot companies are in mainland China (affects hosting region, ICP filing and email deliverability). *Still open; placeholder name Hengtu (衡图) until decided.*
 
 ## 11. Risks
 
