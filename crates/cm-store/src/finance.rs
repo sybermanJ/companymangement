@@ -743,6 +743,11 @@ pub async fn evaluate_project(t: &mut TenantTx, project: Uuid) -> Result<()> {
     }
     let cost = project_cost(t, project).await?;
     let p = get_project(t, project).await?;
+    let locale: String = sqlx::query_scalar("SELECT locale FROM tenant WHERE id = $1")
+        .bind(t.tenant_id)
+        .fetch_optional(&mut *t.tx)
+        .await?
+        .unwrap_or_default();
     for th in ths {
         let rule = match (th.mode.as_str(), th.amount_minor, th.percent) {
             ("absolute", Some(a), _) => ThresholdRule::Absolute { amount_minor: a },
@@ -771,23 +776,20 @@ pub async fn evaluate_project(t: &mut TenantTx, project: Uuid) -> Result<()> {
                 .bind(limit_minor)
                 .execute(&mut *t.tx)
                 .await?;
-                let metric = if th.metric == "forecast" {
-                    "forecast"
-                } else {
-                    "labour cost"
-                };
-                let money_text = format!(
-                    "{} {metric} {} ≥ {}",
-                    p.key,
-                    fmt_money(observed, &p.currency),
-                    fmt_money(limit_minor, &p.currency)
-                );
                 let pct = cost
                     .used_pct
                     .map(|x| format!("{x}%"))
                     .unwrap_or_else(|| "—".into());
-                let hours_text = format!("{} {metric}: budget used {pct}", p.key);
-                let subject = format!("[{}] {} {}", th.level, p.key, p.name);
+                let words = alert_words(&locale, &th.level, &th.metric);
+                let money_text = format!(
+                    "{} {} {} ≥ {}",
+                    p.key,
+                    words.metric,
+                    fmt_money(observed, &p.currency),
+                    fmt_money(limit_minor, &p.currency)
+                );
+                let hours_text = format!("{} {}{}{pct}", p.key, words.metric, words.used);
+                let subject = format!("{} · {} {}", words.level, p.key, p.name);
                 let link = format!("/finance?project={project}");
                 let mut money_people: Vec<Uuid> = Vec::new();
                 if th.notify_finance {
@@ -869,6 +871,48 @@ pub async fn export_rows(
     .bind(user)
     .fetch_all(&mut *t.tx)
     .await?)
+}
+
+struct AlertWords {
+    level: &'static str,
+    metric: &'static str,
+    used: &'static str,
+}
+
+/// Alert texts go to the inbox and by email, so they follow the company language.
+fn alert_words(locale: &str, level: &str, metric: &str) -> AlertWords {
+    let forecast = metric == "forecast";
+    let (lv, m, used): ([&'static str; 3], [&'static str; 2], &'static str) = match locale {
+        "zh-TW" => (
+            ["提示", "預警", "嚴重"],
+            ["人工成本", "預測完工成本"],
+            "：預算已用 ",
+        ),
+        "ja" => (
+            ["情報", "警告", "重大"],
+            ["人件費", "完了時予測"],
+            "：予算使用率 ",
+        ),
+        "en" => (
+            ["Info", "Warning", "Critical"],
+            ["labour cost", "forecast at completion"],
+            ": budget used ",
+        ),
+        _ => (
+            ["提示", "预警", "严重"],
+            ["人工成本", "预测完工成本"],
+            "：预算已用 ",
+        ),
+    };
+    AlertWords {
+        level: match level {
+            "critical" => lv[2],
+            "warn" => lv[1],
+            _ => lv[0],
+        },
+        metric: m[usize::from(forecast)],
+        used,
+    }
 }
 
 #[cfg(test)]

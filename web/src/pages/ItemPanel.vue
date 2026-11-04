@@ -313,7 +313,7 @@ function evText(e: ItemEvent): string {
       <section class="stack">
         <h3>{{ t('work.history') }}</h3>
         <ol class="history">
-          <li v-for="e in events" :key="e.id"><strong>{{ e.actor_name }}</strong> {{ evText(e) }} <span class="muted small">{{ fmt.format(new Date(e.created_at)) }}</span></li>
+          <li v-for="e in events" :key="e.id"><strong>{{ e.kind === 'commit_linked' && e.payload?.author ? e.payload.author : e.actor_name }}</strong> {{ evText(e) }} <span class="muted small">{{ fmt.format(new Date(e.created_at)) }}</span></li>
         </ol>
       </section>
     </template>

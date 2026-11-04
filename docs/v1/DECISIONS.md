@@ -76,3 +76,6 @@ GitHub, Gitea/Forgejo, GitLab and other servers all connect with a per-repositor
 
 ## D24 — Exports are CSV (2026-11-04)
 Timesheet and cost exports are UTF-8 CSV with a BOM, which Excel and WPS open directly with Chinese text intact. Formula-like cells are neutralised. XLSX is not needed for v1.
+
+## D25 — One self-contained executable for self-hosting (2026-11-04)
+`scripts/build-bundle.sh` builds `dist/hengtu-linux-x86_64`: a static (musl) binary with the web app and a PostgreSQL 17.6 server compiled in (binaries from the zonky embedded-postgres project, Apache 2.0, PostgreSQL licence). Without `DATABASE_URL` it unpacks PostgreSQL into its data folder on first start, creates a cluster with a random superuser password, and runs the app as its own non-superuser role (`cm_app`), so row-level security behaves exactly as in the SaaS setup. PostgreSQL listens on 127.0.0.1 only. When started as root it runs PostgreSQL as `nobody` (PostgreSQL refuses root) and keeps data in `/var/lib/hengtu`. Cookies default to non-secure in this mode because a fresh install is usually reached over plain http; set `COOKIE_SECURE=true` behind https. Setting `DATABASE_URL` keeps the external-database behaviour. Linux x86-64 only for now; Windows and macOS would need their own PostgreSQL bundles.

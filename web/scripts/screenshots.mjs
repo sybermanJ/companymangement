@@ -4,6 +4,7 @@
 // DATABASE_URL set (used only to read invitation links from the email outbox).
 import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
+import { createHmac } from 'node:crypto'
 const require = createRequire(import.meta.url)
 const { chromium } = require('playwright')
 
@@ -48,7 +49,7 @@ for (const k of ['wanglei', 'zhaomin']) {
   await call('POST', '/invitations/accept', { token: inviteToken(people[k].email), password: 'member password 1' })
 }
 const be = await call('POST', '/roles', { name: '后端工程师', department_id: rd.id })
-await call('POST', '/roles', { name: '测试工程师', department_id: qa.id })
+const tester = await call('POST', '/roles', { name: '测试工程师', department_id: qa.id })
 await call('POST', '/roles', { name: '项目经理', department_id: null })
 const me = await call('GET', '/me')
 await call('POST', '/role-assignments', { user_id: me.user_id, role_id: be.id, department_id: rd.id })
@@ -110,6 +111,58 @@ await zc('POST', '/login', { email: people.zhaomin.email, password: 'member pass
 st = await zc('POST', `/items/${t4.id}/status`, { version: 1, status: 'in_progress' })
 await zc('PATCH', `/items/${t4.id}`, { version: st.version, progress_pct: 35 })
 await zc('POST', `/items/${t4.id}/logs`, { minutes: 300, description: '对账字段梳理' })
+
+// --- Routine work, requests, hand-offs (phase 2) ---
+await call('POST', '/role-assignments', { user_id: people.zhaomin.id, role_id: tester.id, department_id: qa.id })
+await call('POST', '/role-assignments', { user_id: people.wanglei.id, role_id: be.id, department_id: rd.id })
+await call('PUT', `/departments/${qa.id}/head`, { head_user_id: me.user_id })
+await call('POST', '/routines', {
+  title: '每日冒烟测试', description: '主流程下单、支付、退款各走一遍', recurrence: 'daily', weekdays: [],
+  target_role_id: tester.id, target_department_id: qa.id, mode: 'each_member', estimate_minutes: 60, project_id: proj.id,
+  deliverables: [{ kind: 'text', min_count: 1, required: true, instructions: '结论：通过/不通过' }, { kind: 'image', min_count: 2, required: true, instructions: '关键页面截图' }],
+})
+await call('POST', '/routines', {
+  title: '工作日报', recurrence: 'weekdays', weekdays: [], target_user_id: people.wanglei.id, mode: 'each_member', estimate_minutes: 15,
+  deliverables: [{ kind: 'text', min_count: 1, required: true, instructions: '今天完成了什么，明天计划' }],
+})
+await call('POST', '/routines', {
+  title: '周例会纪要', recurrence: 'weekly', weekdays: [1], target_role_id: be.id, target_department_id: rd.id, mode: 'pool',
+  deliverables: [{ kind: 'text', min_count: 1, required: true }, { kind: 'link', min_count: 1, required: false, instructions: '会议录像链接' }],
+})
+await call('POST', '/routines/generate', {})
+await call('POST', '/requests', { to_user: people.wanglei.id, title: '帮忙看一下退款回调的报错日志', description: '线上昨晚 3 笔退款回调 500', due: d(1), project_id: proj.id, estimate_minutes: 60 })
+// Zhao Min (QA) hands the reconciliation task to Wang Lei (R&D): cross-department, needs approval.
+const t4now = await zc('GET', `/items/${t4.id}`)
+await zc('POST', `/items/${t4.id}/handoffs`, { version: t4now.item.version, to_user: people.wanglei.id, reason: '对账逻辑和订单服务耦合，交给后端更合适', new_due: d(6) })
+// Wang Lei submits his daily report deliverable.
+const wlMine = await wl('GET', '/my/items')
+const report = (wlMine.items ?? []).find((i) => i.title === '工作日报')
+if (report) {
+  const det = await wl('GET', `/items/${report.id}`)
+  await wl('POST', `/items/${report.id}/submissions`, { spec_id: det.specs[0].id, value: '完成订单幂等改造；明天做回调重试。' })
+}
+
+// --- Finance (phase 3): rates in two currencies, FX, thresholds ---
+for (const [u, minor, ccy] of [[me.user_id, 8000, 'USD'], [people.wanglei.id, 6000, 'USD'], [people.zhaomin.id, 30000, 'CNY']]) {
+  await call('POST', '/finance/rates', { user_id: u, rate_minor: minor, currency: ccy, effective_from: d(-60), note: '2026 年度费率' })
+}
+await call('POST', '/finance/fx', { from_ccy: 'CNY', to_ccy: 'USD', rate: '0.1400', effective_date: d(-60) })
+await call('POST', `/finance/projects/${proj.id}/thresholds`, { mode: 'percent', percent: 50, level: 'warn' })
+await call('POST', `/finance/projects/${proj.id}/thresholds`, { mode: 'percent', percent: 80, level: 'critical', notify_admins: true })
+await call('POST', `/finance/projects/${proj.id}/thresholds`, { mode: 'absolute', amount_minor: 250000, level: 'info' })
+await call('POST', `/finance/projects/${proj.id}/thresholds`, { metric: 'forecast', mode: 'percent', percent: 100, level: 'critical' })
+
+// --- Git (phase 4): a self-hosted Gitea repo pushing a commit that names an item ---
+const repo = await call('POST', '/git/repos', { provider: 'gitea', name: 'pay/order-service', url: 'https://git.example.test/pay/order-service', project_id: proj.id })
+await call('POST', '/git/identities', { email: 'wanglei@dev.example', user_id: people.wanglei.id })
+const t3now = await call('GET', `/items/${t3.id}`)
+const hookBody = JSON.stringify({ ref: `refs/heads/feature/${t3now.item.key}-idempotency`, commits: [
+  { id: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678', message: `${t3now.item.key} 下单接口幂等`, url: 'https://git.example.test/pay/order-service/commit/a1b2c3d', timestamp: new Date().toISOString(), author: { name: '王磊', email: 'wanglei@dev.example' } },
+  { id: 'b2c3d4e5f60718293a4b5c6d7e8f901234567890', message: '重复回调单元测试', url: 'https://git.example.test/pay/order-service/commit/b2c3d4e', timestamp: new Date().toISOString(), author: { name: '外包同事', email: 'contractor@vendor.example' } },
+] })
+const hook = await fetch(`${base}/api/v1/hooks/git/${repo.repo.id}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-gitea-event': 'push', 'x-gitea-signature': createHmac('sha256', repo.secret).update(hookBody).digest('hex') }, body: hookBody })
+if (!hook.ok) { console.error('webhook failed', hook.status, await hook.text()); process.exit(1) }
+console.log('webhook', await hook.json())
 
 const shots = []
 async function shot(name, setup, pg = page) {
@@ -174,6 +227,32 @@ await shot('my-work-phone', async () => {
   await p2page.getByRole('button', { name: /订单服务改造/ }).first().click()
   await p2page.waitForTimeout(600)
 }, p2page)
+await page.setViewportSize({ width: 1280, height: 800 })
+await page.locator('#lang').selectOption('zh-CN')
+await page.evaluate(() => { document.documentElement.dataset.theme = 'light' })
+await shot('overview-light', async () => { await page.goto(base + '/overview') })
+await shot('team-light', async () => { await page.goto(base + '/team'); await page.getByRole('button', { name: '王磊' }).click(); await page.waitForTimeout(500) })
+await shot('inbox-light', async () => { await page.goto(base + '/inbox') })
+await shot('routines-light', async () => { await page.goto(base + '/routines') })
+await shot('finance-costs-light', async () => { await page.goto(base + '/finance') })
+await shot('finance-rates-dark', async () => {
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+  await page.getByRole('tab').nth(1).click()
+})
+await page.evaluate(() => { document.documentElement.dataset.theme = 'light' })
+await shot('org-git-light', async () => { await page.goto(base + '/org'); await page.getByRole('tab').last().click() })
+await shot('my-work-routines-light', async () => {
+  await p2page.setViewportSize({ width: 1280, height: 800 })
+  await p2page.goto(base + '/my')
+}, p2page)
+await shot('item-commits-light', async () => {
+  await p2page.goto(base + `/my?item=${t3.id}`)
+  await p2page.waitForTimeout(600)
+}, p2page)
+await page.setViewportSize({ width: 390, height: 844 })
+await shot('inbox-phone', async () => { await page.goto(base + '/inbox') })
+await shot('finance-phone-en', async () => { await page.locator('#lang').selectOption('en'); await page.goto(base + '/finance') })
+await page.locator('#lang').selectOption('zh-CN')
 await page.evaluate(async () => { await fetch('/api/v1/logout', { method: 'POST', headers: { 'X-Requested-With': 'cm' } }) })
 await shot('signup-phone', async () => { await page.goto(base + '/signup') })
 

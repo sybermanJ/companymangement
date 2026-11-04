@@ -79,6 +79,16 @@ async function pick(p: Person) {
     error.value = errorText(e, t)
   }
 }
+// Every day of the range, so a single busy day does not fill the whole chart.
+const days = computed(() => {
+  const have = new Map((breakdown.value?.by_day ?? []).map((d) => [d.day.slice(0, 10), d.minutes]))
+  const out: { day: string; minutes: number }[] = []
+  for (let d = new Date(range.from).getTime(); d <= new Date(range.to).getTime(); d += 864e5) {
+    const k = iso(new Date(d))
+    out.push({ day: k, minutes: have.get(k) ?? 0 })
+  }
+  return out
+})
 const maxDay = computed(() => Math.max(60, ...(breakdown.value?.by_day.map((d) => d.minutes) ?? [])))
 const totalOf = (b: Breakdown) => b.by_project.reduce((a, x) => a + x.minutes, 0)
 </script>
@@ -140,7 +150,7 @@ const totalOf = (b: Breakdown) => b.by_project.reduce((a, x) => a + x.minutes, 0
             </ul>
             <h3>{{ t('rep.byDay') }}</h3>
             <div class="days" role="img" :aria-label="t('rep.byDay')">
-              <span v-for="d in breakdown.by_day" :key="d.day" class="day" :title="`${d.day} ${hours(d.minutes)}h`"><i :style="{ height: `${(d.minutes / maxDay) * 100}%` }" /></span>
+              <span v-for="d in days" :key="d.day" class="day" :title="`${d.day} ${hours(d.minutes)}h`"><i :style="{ height: `${(d.minutes / maxDay) * 100}%` }" /></span>
             </div>
             <h3>{{ t('rep.topItems') }}</h3>
             <ul class="rows">

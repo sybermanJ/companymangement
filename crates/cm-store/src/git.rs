@@ -237,7 +237,8 @@ pub async fn ingest_commit(
             .fetch_optional(&mut *t.tx)
             .await?;
         if let Some((item,)) = item {
-            if link(t, id, item, linked_by.or(user), &sha).await? {
+            let unmapped = (linked_by.is_none() && user.is_none()).then_some(c.author_name);
+            if link(t, id, item, linked_by.or(user), &sha, unmapped).await? {
                 linked.push(k);
             }
         }
@@ -251,6 +252,7 @@ async fn link(
     item: Uuid,
     by: Option<Uuid>,
     sha: &str,
+    unmapped_author: Option<&str>,
 ) -> Result<bool> {
     let r = sqlx::query(
         "INSERT INTO git_commit_link (tenant_id, commit_id, work_item_id, linked_by) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING",
@@ -272,7 +274,9 @@ async fn link(
             item,
             actor,
             "commit_linked",
-            json!({ "sha": &sha[..sha.len().min(10)] }),
+            // Without a mapped author the event row carries the holder; the
+            // payload names who really wrote the commit.
+            json!({ "sha": &sha[..sha.len().min(10)], "author": unmapped_author }),
         )
         .await?;
         // A linked commit counts towards a git_commit deliverable, if the item asks for one.
@@ -331,6 +335,14 @@ pub async fn link_manual(
 ) -> Result<()> {
     let it = get_item(t, item).await?;
     let (id, _) = ingest_commit(t, None, c, &[], Some(actor)).await?;
-    link(t, id, it.id, Some(actor), &c.sha.trim().to_lowercase()).await?;
+    link(
+        t,
+        id,
+        it.id,
+        Some(actor),
+        &c.sha.trim().to_lowercase(),
+        None,
+    )
+    .await?;
     Ok(())
 }

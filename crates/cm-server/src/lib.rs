@@ -4,6 +4,8 @@
 mod accounts;
 mod admin;
 mod auth;
+#[cfg(feature = "bundle")]
+pub mod embedded;
 mod error;
 mod finance;
 mod flow;

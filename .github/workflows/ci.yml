@@ -48,3 +48,33 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: scripts/build-bundle.sh
+      - name: Smoke test (embedded PostgreSQL, fresh data folder)
+        run: |
+          mkdir -p /tmp/smoke && cd /tmp/smoke
+          BIND=127.0.0.1:8080 "$GITHUB_WORKSPACE/dist/hengtu-linux-x86_64" > log.txt 2>&1 &
+          for i in $(seq 1 90); do curl -sf localhost:8080/healthz && break; sleep 1; done
+          curl -sf localhost:8080/ | grep -q '<div id="app">' || { cat log.txt; exit 1; }
+          kill -TERM %1; wait || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hengtu-linux-x86_64
+          path: dist/hengtu-linux-x86_64
