@@ -11,6 +11,9 @@ Status: **phase 0 (foundation)**. Working name: Hengtu (衡图), placeholder unt
 
 | Path | What |
 | --- | --- |
+| ![Gantt](docs/screenshots/gantt-light.png) Project Gantt with dependencies and milestones | ![Item panel](docs/screenshots/gantt-item-panel-light.png) Item panel: log work, attachments, history |
+| ![Week scale, dark](docs/screenshots/gantt-week-dark.png) Week scale, dark theme | ![Projects](docs/screenshots/projects-light.png) Project list with hours and progress |
+| ![My work, phone](docs/screenshots/my-work-phone.png) My work on a phone | ![Login](docs/screenshots/login-light.png) Login |
 | `crates/cm-domain` | Pure rules: money and labour cost, currency conversion, cost thresholds, hand-offs, work-item lifecycle, deliverables |
 | `crates/cm-store` | PostgreSQL with per-company row-level security; migrations |
 | `crates/cm-server` | axum HTTP API: sign-up, login, email verification, password reset, invitations, members, roles, departments; serves the web app |

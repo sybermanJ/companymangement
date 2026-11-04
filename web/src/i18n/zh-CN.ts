@@ -18,4 +18,16 @@ export default {
     roleName: '角色名称', roleDept: '所属部门（可选）', addRole: '添加角色', assign: '分配角色', person: '成员', companyWide: '全公司',
     adminOnly: '只有管理员可以修改组织设置。',
   },
+  work: {
+    projects: '项目', newProject: '新建项目', key: '项目代号', name: '项目名称', owner: '项目经理', start: '开始', end: '结束', budget: '人工预算',
+    logged: '已记录工时', estimate: '预估', hours: '小时', openItems: '进行中 / 全部任务', noProjects: '还没有项目。', back: '全部项目',
+    gantt: '甘特图', addItem: '新建任务', kind: '类型', phase: '阶段', task: '任务', milestone: '里程碑', title: '标题', parentItem: '所属阶段',
+    holder: '负责人', unassigned: '未指派', estimateHours: '预估（小时）', addDep: '添加依赖', depFrom: '前置任务', depTo: '后续任务',
+    today: '今天', unscheduled: '未排期', dayView: '按日', weekView: '按周', dragHint: '拖动条形可调整日期，拖动两端可改变起止。', legendDone: '已完成', legendActive: '进行中（填充为进度）', legendTodo: '未开始',
+    status: '状态', s_todo: '未开始', s_in_progress: '进行中', s_blocked: '受阻', s_in_review: '待评审', s_done: '已完成', s_cancelled: '已取消',
+    progress: '进度', description: '说明', logWork: '记录工作', minutes: '分钟', other: '其他', whatDone: '做了什么', attach: '附件（图片、音频、视频、文件）',
+    save: '保存记录', startTimer: '开始计时', stopTimer: '停止计时并记录', timerRunning: '计时中：{key} {title}', logs: '工作记录', history: '流转记录', noLogs: '还没有记录。',
+    delete: '删除', close: '关闭', mine: '我的工作', noMine: '目前没有指派给您的任务。', conflict: '该任务已被他人修改，已为您刷新。', saved: '已保存。',
+    ev_created: '创建了任务', ev_status_changed: '状态：{from} → {to}', ev_logged: '记录了 {h} 小时', ev_log_deleted: '删除了一条 {h} 小时的记录', ev_rescheduled: '调整了日期', ev_assigned: '更换了负责人', ev_edited: '编辑了内容', ev_attachment_added: '添加了附件 {name}', ev_dependency_added: '添加了依赖',
+  },
 }

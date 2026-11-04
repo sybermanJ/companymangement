@@ -18,4 +18,16 @@ export default {
     roleName: '角色名稱', roleDept: '所屬部門（選填）', addRole: '新增角色', assign: '指派角色', person: '成員', companyWide: '全公司',
     adminOnly: '只有管理員可以修改組織設定。',
   },
+  work: {
+    projects: '專案', newProject: '建立專案', key: '專案代號', name: '專案名稱', owner: '專案經理', start: '開始', end: '結束', budget: '人工預算',
+    logged: '已記錄工時', estimate: '預估', hours: '小時', openItems: '進行中 / 全部任務', noProjects: '還沒有專案。', back: '全部專案',
+    gantt: '甘特圖', addItem: '建立任務', kind: '類型', phase: '階段', task: '任務', milestone: '里程碑', title: '標題', parentItem: '所屬階段',
+    holder: '負責人', unassigned: '未指派', estimateHours: '預估（小時）', addDep: '新增相依', depFrom: '前置任務', depTo: '後續任務',
+    today: '今天', unscheduled: '未排程', dayView: '按日', weekView: '按週', dragHint: '拖曳條形可調整日期，拖曳兩端可改變起訖。', legendDone: '已完成', legendActive: '進行中（填色為進度）', legendTodo: '未開始',
+    status: '狀態', s_todo: '未開始', s_in_progress: '進行中', s_blocked: '受阻', s_in_review: '待審查', s_done: '已完成', s_cancelled: '已取消',
+    progress: '進度', description: '說明', logWork: '記錄工作', minutes: '分鐘', other: '其他', whatDone: '做了什麼', attach: '附件（圖片、音訊、影片、檔案）',
+    save: '儲存記錄', startTimer: '開始計時', stopTimer: '停止計時並記錄', timerRunning: '計時中：{key} {title}', logs: '工作記錄', history: '流轉記錄', noLogs: '還沒有記錄。',
+    delete: '刪除', close: '關閉', mine: '我的工作', noMine: '目前沒有指派給您的任務。', conflict: '此任務已被他人修改，已為您重新整理。', saved: '已儲存。',
+    ev_created: '建立了任務', ev_status_changed: '狀態：{from} → {to}', ev_logged: '記錄了 {h} 小時', ev_log_deleted: '刪除了一筆 {h} 小時的記錄', ev_rescheduled: '調整了日期', ev_assigned: '更換了負責人', ev_edited: '編輯了內容', ev_attachment_added: '新增了附件 {name}', ev_dependency_added: '新增了相依',
+  },
 }

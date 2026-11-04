@@ -18,4 +18,16 @@ export default {
     roleName: '役割名', roleDept: '所属部署（任意）', addRole: '役割を追加', assign: '役割を割り当て', person: 'メンバー', companyWide: '全社',
     adminOnly: '組織設定を変更できるのは管理者のみです。',
   },
+  work: {
+    projects: 'プロジェクト', newProject: '新規プロジェクト', key: 'プロジェクトキー', name: 'プロジェクト名', owner: 'プロジェクトマネージャー', start: '開始', end: '終了', budget: '人件費予算',
+    logged: '記録時間', estimate: '見積', hours: '時間', openItems: '進行中 / 全タスク', noProjects: 'まだプロジェクトがありません。', back: 'プロジェクト一覧',
+    gantt: 'ガント', addItem: '新規項目', kind: '種類', phase: 'フェーズ', task: 'タスク', milestone: 'マイルストーン', title: 'タイトル', parentItem: '所属フェーズ',
+    holder: '担当者', unassigned: '未割り当て', estimateHours: '見積（時間）', addDep: '依存関係を追加', depFrom: '先行タスク', depTo: '後続タスク',
+    today: '今日', unscheduled: '未計画', dayView: '日', weekView: '週', dragHint: 'バーをドラッグして移動、両端をドラッグして開始・終了を変更できます。', legendDone: '完了', legendActive: '進行中（塗りは進捗）', legendTodo: '未着手',
+    status: '状態', s_todo: '未着手', s_in_progress: '進行中', s_blocked: 'ブロック', s_in_review: 'レビュー待ち', s_done: '完了', s_cancelled: '中止',
+    progress: '進捗', description: '説明', logWork: '作業を記録', minutes: '分', other: 'その他', whatDone: '作業内容', attach: '添付（画像・音声・動画・ファイル）',
+    save: '記録を保存', startTimer: 'タイマー開始', stopTimer: 'タイマーを止めて記録', timerRunning: '計測中：{key} {title}', logs: '作業記録', history: '履歴', noLogs: 'まだ記録がありません。',
+    delete: '削除', close: '閉じる', mine: '自分の作業', noMine: '現在割り当てられたタスクはありません。', conflict: '他の人が変更したため、最新の内容に更新しました。', saved: '保存しました。',
+    ev_created: '項目を作成', ev_status_changed: '状態：{from} → {to}', ev_logged: '{h} 時間を記録', ev_log_deleted: '{h} 時間の記録を削除', ev_rescheduled: '日付を変更', ev_assigned: '担当者を変更', ev_edited: '内容を編集', ev_attachment_added: '{name} を添付', ev_dependency_added: '依存関係を追加',
+  },
 }

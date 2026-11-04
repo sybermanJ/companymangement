@@ -58,3 +58,6 @@ The five screens in docs/v1/mockups are the visual baseline for the web app.
 
 ## D18 — Account emails via a transactional outbox (2026-11-04)
 Verification, reset and invitation emails are written to `outbox_email` in the same transaction as the change and delivered by a worker over SMTP (`SMTP_URL`); without SMTP they are logged. Tokens are single-use and stored only as SHA-256.
+
+## D19 — Gantt is our own Vue component (2026-11-04)
+Instead of embedding Frappe Gantt, `web/src/pages/Gantt.vue` draws the chart: a task tree on the left (as in the approved mockup), day/week scales, dependency arrows, drag to move or resize with day snapping, and the same design tokens in light and dark. It is open-source code in this repo (Ricky's answer 9), has no third-party runtime dependency, and keeps item keys, holders and progress labels in one row.

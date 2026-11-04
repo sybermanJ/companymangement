@@ -18,4 +18,16 @@ export default {
     roleName: 'Role name', roleDept: 'Department (optional)', addRole: 'Add role', assign: 'Assign role', person: 'Member', companyWide: 'Company-wide',
     adminOnly: 'Only admins can change organization settings.',
   },
+  work: {
+    projects: 'Projects', newProject: 'New project', key: 'Project key', name: 'Project name', owner: 'Project manager', start: 'Start', end: 'End', budget: 'Labour budget',
+    logged: 'Hours logged', estimate: 'Estimate', hours: 'h', openItems: 'Open / all tasks', noProjects: 'No projects yet.', back: 'All projects',
+    gantt: 'Gantt', addItem: 'New item', kind: 'Type', phase: 'Phase', task: 'Task', milestone: 'Milestone', title: 'Title', parentItem: 'Phase',
+    holder: 'Holder', unassigned: 'Unassigned', estimateHours: 'Estimate (hours)', addDep: 'Add dependency', depFrom: 'Finishes first', depTo: 'Then starts',
+    today: 'Today', unscheduled: 'Not scheduled', dayView: 'Days', weekView: 'Weeks', dragHint: 'Drag a bar to move it; drag its ends to change start or end.', legendDone: 'Done', legendActive: 'In progress (fill = progress)', legendTodo: 'Not started',
+    status: 'Status', s_todo: 'To do', s_in_progress: 'In progress', s_blocked: 'Blocked', s_in_review: 'In review', s_done: 'Done', s_cancelled: 'Cancelled',
+    progress: 'Progress', description: 'Description', logWork: 'Log work', minutes: 'minutes', other: 'Other', whatDone: 'What did you do?', attach: 'Attachments (images, audio, video, files)',
+    save: 'Save entry', startTimer: 'Start timer', stopTimer: 'Stop timer and log', timerRunning: 'Timer running: {key} {title}', logs: 'Work log', history: 'History', noLogs: 'Nothing logged yet.',
+    delete: 'Delete', close: 'Close', mine: 'My work', noMine: 'Nothing is assigned to you right now.', conflict: 'Someone else changed this item; it has been refreshed.', saved: 'Saved.',
+    ev_created: 'created the item', ev_status_changed: 'status: {from} → {to}', ev_logged: 'logged {h} h', ev_log_deleted: 'deleted a {h} h entry', ev_rescheduled: 'changed the dates', ev_assigned: 'changed the holder', ev_edited: 'edited the item', ev_attachment_added: 'attached {name}', ev_dependency_added: 'added a dependency',
+  },
 }

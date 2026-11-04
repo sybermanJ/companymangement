@@ -22,7 +22,7 @@ async function submit() {
   try {
     await api.post('/login', { email: email.value, password: password.value })
     await loadMe()
-    router.push(typeof route.query.next === 'string' ? route.query.next : '/org')
+    router.push(typeof route.query.next === 'string' ? route.query.next : '/projects')
   } catch (e) {
     error.value = errorText(e, t)
   } finally {

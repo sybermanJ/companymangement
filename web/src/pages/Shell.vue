@@ -9,7 +9,9 @@ import { ref } from 'vue'
 const { t, locale } = useI18n()
 const router = useRouter()
 const theme = ref(document.documentElement.dataset.theme ?? 'light')
-const soon = ['overview', 'projects', 'team', 'mine', 'finance'] as const
+const NAV = [
+  { k: 'overview' }, { k: 'projects', to: '/projects' }, { k: 'team' }, { k: 'mine', to: '/my' }, { k: 'finance' }, { k: 'org', to: '/org' },
+] as const
 
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
@@ -32,8 +34,10 @@ const resent = ref(false)
     <header class="topbar">
       <span class="brand">{{ t('brand') }}</span>
       <nav class="nav" :aria-label="t('nav.org')">
-        <span v-for="k in soon" :key="k" class="nav-item disabled" :title="t('nav.soon')" aria-disabled="true">{{ t(`nav.${k}`) }}</span>
-        <RouterLink to="/org" class="nav-item" active-class="active">{{ t('nav.org') }}</RouterLink>
+        <template v-for="n in NAV" :key="n.k">
+          <RouterLink v-if="'to' in n" :to="n.to" class="nav-item" active-class="active">{{ t(`nav.${n.k}`) }}</RouterLink>
+          <span v-else class="nav-item disabled" :title="t('nav.soon')" aria-disabled="true">{{ t(`nav.${n.k}`) }}</span>
+        </template>
       </nav>
       <span class="spacer" />
       <label class="sr-only" for="lang">{{ t('common.language') }}</label>
