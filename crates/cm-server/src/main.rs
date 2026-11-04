@@ -24,7 +24,11 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("MAIL_FROM").unwrap_or_else(|_| "Hengtu <no-reply@localhost>".into());
     cm_server::mail::spawn_worker(pool.clone(), std::env::var("SMTP_URL").ok(), mail_from);
 
-    let mut app = cm_server::router(cm_server::AppState::new(pool, cookie_secure, base_url));
+    let mut state = cm_server::AppState::new(pool, cookie_secure, base_url);
+    state.storage = cm_server::storage::Storage::new(
+        std::env::var("STORAGE_DIR").unwrap_or_else(|_| "data/objects".into()),
+    );
+    let mut app = cm_server::router(state);
     // Serve the built web app (single-page app: unknown paths get index.html).
     let web_dir =
         std::path::PathBuf::from(std::env::var("WEB_DIR").unwrap_or_else(|_| "web/dist".into()));

@@ -36,6 +36,7 @@ impl From<StoreError> for ApiError {
     fn from(e: StoreError) -> Self {
         match e {
             StoreError::NotFound => Self::new(StatusCode::NOT_FOUND, "not_found", "not found"),
+            StoreError::Invalid(why) => Self::new(StatusCode::UNPROCESSABLE_ENTITY, "invalid", why),
             StoreError::Conflict(what) => Self::new(
                 StatusCode::CONFLICT,
                 "conflict",

@@ -8,3 +8,4 @@
 | 2026-11-04 14:10 | Phase 0 | Email verification, password reset, login rate limiting, invitations, members, roles, department heads (API + tests) | Web app shell: Vue 3 sign-up/login/org admin with i18n and 鉴色 tokens |
 | 2026-11-04 14:15 | Phase 0 | Web app: sign-up, login, verify, reset, accept invite, org admin (departments, members, roles) in 4 languages, light/dark; screenshots; CI web job | Phase 0 done pending CI. Phase 1: projects, work items, Gantt view, work logs with attachments |
 | 2026-11-04 14:21 | Phase 0 | Fix rustfmt in cm-server main.rs (CI fmt check) | Phase 1: projects, work items, Gantt view, work logs |
+| 2026-11-04 15:23 | Phase 1 | Projects, work items, dependencies (cycle check), history, work logs, attachments (safe download), timer: API + tests | Web: project list, Gantt with drag-to-reschedule, item detail with logging and uploads |

@@ -7,6 +7,8 @@ mod auth;
 mod error;
 mod limiter;
 pub mod mail;
+pub mod storage;
+mod work;
 
 use axum::extract::State;
 use axum::http::{Method, StatusCode};
@@ -28,6 +30,7 @@ pub struct AppState {
     /// Public URL of the web app, used in email links (no trailing slash).
     pub base_url: String,
     pub limiter: std::sync::Arc<limiter::LoginLimiter>,
+    pub storage: storage::Storage,
 }
 
 impl AppState {
@@ -37,6 +40,7 @@ impl AppState {
             cookie_secure,
             base_url: base_url.into().trim_end_matches('/').to_owned(),
             limiter: Default::default(),
+            storage: storage::Storage::new(std::env::temp_dir().join("cm-objects")),
         }
     }
 }
@@ -69,6 +73,31 @@ pub fn router(state: AppState) -> Router {
             "/departments/{id}/head",
             axum::routing::put(admin::set_head),
         )
+        .route(
+            "/projects",
+            get(work::list_projects).post(work::create_project),
+        )
+        .route("/projects/{id}", get(work::get_project))
+        .route("/projects/{id}/items", post(work::create_item))
+        .route("/items/{id}", get(work::get_item).patch(work::patch_item))
+        .route("/items/{id}/status", post(work::set_status))
+        .route("/items/{id}/logs", post(work::create_log))
+        .route(
+            "/items/{id}/attachments",
+            post(work::upload_attachment).layer(axum::extract::DefaultBodyLimit::max(
+                work::MAX_UPLOAD_BYTES as usize + 1024 * 1024,
+            )),
+        )
+        .route("/attachments/{id}", get(work::download_attachment))
+        .route("/logs/{id}", axum::routing::delete(work::delete_log))
+        .route("/dependencies", post(work::add_dependency))
+        .route(
+            "/dependencies/{from}/{to}",
+            axum::routing::delete(work::remove_dependency),
+        )
+        .route("/my/items", get(work::my_items))
+        .route("/timer/start", post(work::start_timer))
+        .route("/timer/stop", post(work::stop_timer))
         .layer(middleware::from_fn(csrf_guard));
     Router::new()
         .route("/healthz", get(|| async { "ok" }))

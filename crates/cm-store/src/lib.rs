@@ -9,6 +9,7 @@ use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 pub mod accounts;
+pub mod work;
 
 pub use sqlx;
 
@@ -18,6 +19,8 @@ pub enum StoreError {
     NotFound,
     #[error("already exists: {0}")]
     Conflict(&'static str),
+    #[error("{0}")]
+    Invalid(&'static str),
     #[error(transparent)]
     Db(#[from] sqlx::Error),
     #[error(transparent)]
