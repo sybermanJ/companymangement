@@ -49,3 +49,15 @@ td { padding: 10px 8px; border-bottom: 1px solid var(--inset); overflow-wrap: an
 .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
 .auth-page .card { width: 100%; max-width: 420px; }
 .brand { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--accent); }
+
+/* Shared by pages with tabs (Org, Finance). */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tabs button { border: 0; border-radius: 8px 8px 0 0; background: transparent; color: var(--text-2); }
+.tabs button.on { background: var(--surface); color: var(--accent); font-weight: 500; box-shadow: inset 0 -2px 0 var(--accent); }
+.small { font-size: 12px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.level-info { background: var(--info-bg); color: var(--info); }
+.level-warn { background: var(--warn-bg); color: var(--warn); }
+.level-critical { background: var(--danger-bg); color: var(--danger); }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+.empty { color: var(--text-3); padding: 8px 0; }

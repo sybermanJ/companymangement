@@ -8,6 +8,7 @@ import ItemPanel from './ItemPanel.vue'
 import { api, ApiError, type Dependency, type Item, type Member, type Project } from '../lib/api'
 import { errorText } from '../lib/errors'
 import { hours } from '../lib/dates'
+import { money } from '../lib/money'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -19,7 +20,7 @@ const members = ref<Member[]>([])
 const canManage = ref(false)
 const error = ref('')
 const notice = ref('')
-const open = ref<string | null>(null)
+const open = ref<string | null>(typeof route.query.item === 'string' ? route.query.item : null)
 const scale = ref<'day' | 'week'>('day')
 
 async function load() {
@@ -86,6 +87,7 @@ const showForms = ref(false)
     <div class="stack">
       <RouterLink to="/projects" class="muted small">← {{ t('work.back') }}</RouterLink>
       <p v-if="error" class="notice error" role="alert">{{ error }}</p>
+      <p v-if="project && project.open_alerts" class="notice error" role="alert">{{ t('fin.projectAlert', { n: project.open_alerts }) }} <RouterLink v-if="project.cost" :to="`/finance?project=${project.id}`">{{ t('nav.finance') }}</RouterLink></p>
       <template v-if="project">
         <div class="row" style="justify-content: space-between; align-items: flex-end">
           <div style="min-width: 0">
@@ -105,7 +107,8 @@ const showForms = ref(false)
           <div class="card"><div class="muted small">{{ t('work.logged') }} / {{ t('work.estimate') }}</div><div class="big">{{ hours(project.logged_minutes) }} <span class="muted">/ {{ hours(project.estimate_minutes) }} {{ t('work.hours') }}</span></div></div>
           <div class="card"><div class="muted small">{{ t('work.openItems') }}</div><div class="big">{{ project.open_items }} <span class="muted">/ {{ project.total_items }}</span></div></div>
           <div class="card"><div class="muted small">{{ t('work.s_done') }}</div><div class="big">{{ doneCount }} <span class="muted">/ {{ taskCount.length }}</span></div></div>
-          <div v-if="project.labour_budget_minor != null" class="card"><div class="muted small">{{ t('work.budget') }}</div><div class="big">{{ project.currency }} {{ (project.labour_budget_minor / 100).toLocaleString() }}</div></div>
+          <div v-if="project.cost" class="card"><div class="muted small">{{ t('fin.spent') }} / {{ t('work.budget') }}</div><div class="big">{{ money(project.cost.spent_minor, project.currency) }}</div><div class="muted small">{{ money(project.labour_budget_minor, project.currency) }}<template v-if="project.budget_used_pct !== null"> · {{ project.budget_used_pct }}%</template></div></div>
+          <div v-else-if="project.budget_used_pct !== null" class="card"><div class="muted small">{{ t('rep.budgetUsed') }}</div><div class="big">{{ project.budget_used_pct }}%</div></div>
         </div>
 
         <div v-if="showForms && canManage" class="card stack">

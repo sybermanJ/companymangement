@@ -15,6 +15,11 @@ export const router = createRouter({
     { path: '/projects', component: () => import('./pages/Projects.vue') },
     { path: '/projects/:id', component: () => import('./pages/Project.vue') },
     { path: '/my', component: () => import('./pages/Mine.vue') },
+    { path: '/inbox', component: () => import('./pages/Inbox.vue') },
+    { path: '/routines', component: () => import('./pages/Routines.vue') },
+    { path: '/finance', component: () => import('./pages/Finance.vue') },
+    { path: '/overview', component: () => import('./pages/Overview.vue') },
+    { path: '/team', component: () => import('./pages/Team.vue') },
   ],
 })
 

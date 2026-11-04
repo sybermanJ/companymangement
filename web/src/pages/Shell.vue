@@ -3,15 +3,20 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { LOCALES, setLocale, type Locale } from '../i18n'
 import { api } from '../lib/api'
-import { me, applyTheme } from '../lib/session'
-import { ref } from 'vue'
+import { me, applyTheme, currentMembership } from '../lib/session'
+import { unread, startLive, stopLive } from '../lib/live'
+import { computed, onMounted, ref } from 'vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const theme = ref(document.documentElement.dataset.theme ?? 'light')
-const NAV = [
-  { k: 'overview' }, { k: 'projects', to: '/projects' }, { k: 'team' }, { k: 'mine', to: '/my' }, { k: 'finance' }, { k: 'org', to: '/org' },
-] as const
+const sees = computed(() => !!(currentMembership()?.is_admin || currentMembership()?.is_finance))
+const NAV = computed(() => [
+  { k: 'overview', to: '/overview' }, { k: 'projects', to: '/projects' }, { k: 'team', to: '/team' },
+  { k: 'mine', to: '/my' }, { k: 'routines', to: '/routines' },
+  ...(sees.value ? [{ k: 'finance', to: '/finance' }] : []), { k: 'org', to: '/org' },
+])
+onMounted(startLive)
 
 function toggleTheme() {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
@@ -19,6 +24,7 @@ function toggleTheme() {
 }
 async function logout() {
   await api.post('/logout').catch(() => undefined)
+  stopLive()
   me.value = null
   router.push('/login')
 }
@@ -34,12 +40,12 @@ const resent = ref(false)
     <header class="topbar">
       <span class="brand">{{ t('brand') }}</span>
       <nav class="nav" :aria-label="t('nav.org')">
-        <template v-for="n in NAV" :key="n.k">
-          <RouterLink v-if="'to' in n" :to="n.to" class="nav-item" active-class="active">{{ t(`nav.${n.k}`) }}</RouterLink>
-          <span v-else class="nav-item disabled" :title="t('nav.soon')" aria-disabled="true">{{ t(`nav.${n.k}`) }}</span>
-        </template>
+        <RouterLink v-for="n in NAV" :key="n.k" :to="n.to" class="nav-item" active-class="active">{{ t(`nav.${n.k}`) }}</RouterLink>
       </nav>
       <span class="spacer" />
+      <RouterLink to="/inbox" class="nav-item inbox" active-class="active" :aria-label="unread ? t('nav.inboxUnread', { n: unread }) : t('nav.inbox')">
+        {{ t('nav.inbox') }}<span v-if="unread" class="count" aria-hidden="true">{{ unread > 99 ? '99+' : unread }}</span>
+      </RouterLink>
       <label class="sr-only" for="lang">{{ t('common.language') }}</label>
       <select id="lang" :value="locale" @change="setLocale(($event.target as HTMLSelectElement).value as Locale)">
         <option v-for="l in LOCALES" :key="l.code" :value="l.code">{{ l.label }}</option>
@@ -66,11 +72,12 @@ const resent = ref(false)
 .nav { display: flex; flex-wrap: wrap; gap: 4px; }
 .nav-item { padding: 8px 12px; border-radius: 8px; color: var(--text-2); text-decoration: none; }
 .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
-.nav-item.disabled { color: var(--text-3); cursor: default; }
+.inbox { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--danger); color: var(--surface); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
 .spacer { flex: 1 1 auto; }
 .who { color: var(--text-2); }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 20px 24px 0; }
 main.wrap { padding-bottom: 40px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-@media (max-width: 640px) { .topbar, .wrap { padding-left: 16px; padding-right: 16px; } .nav-item.disabled { display: none; } }
+@media (max-width: 640px) { .topbar, .wrap { padding-left: 16px; padding-right: 16px; } }
 </style>

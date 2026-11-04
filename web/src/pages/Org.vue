@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Shell from './Shell.vue'
 import { api, type Assignment, type Department, type Member, type Role } from '../lib/api'
@@ -7,8 +7,8 @@ import { currentMembership } from '../lib/session'
 import { errorText } from '../lib/errors'
 
 const { t } = useI18n()
-type Tab = 'departments' | 'members' | 'roles'
-const tabs: Tab[] = ['departments', 'members', 'roles']
+type Tab = 'departments' | 'members' | 'roles' | 'git'
+const tabs: Tab[] = ['departments', 'members', 'roles', 'git']
 const tab = ref<Tab>('departments')
 
 const departments = ref<Department[]>([])
@@ -89,6 +89,25 @@ const addRole = () => run(async () => {
 const asg = reactive({ user_id: '', role_id: '', department_id: '' })
 const assign = () => run(() => api.post('/role-assignments', { ...asg }))
 
+const setFlags = (m: Member, is_admin: boolean, is_finance: boolean) => run(() => api.put(`/members/${m.user_id}/flags`, { is_admin, is_finance }), t('work.saved'))
+
+interface Repo { repo: { id: string; provider: string; name: string; url: string; project_id: string | null; commits: number }; webhook_url: string }
+const git = ref<{ repos: Repo[]; identities: { email: string; user_name: string }[]; unmapped: { email: string; name: string; commits: number }[] }>({ repos: [], identities: [], unmapped: [] })
+const created = ref<{ secret: string; webhook_url: string } | null>(null)
+const nr = reactive({ provider: 'github', name: '', url: '' })
+const loadGit = async () => {
+  if (isAdmin.value) git.value = await api.get('/git/repos')
+}
+watch(tab, (v) => { if (v === 'git') loadGit().catch((e) => (error.value = errorText(e, t))) })
+const addRepo = () => run(async () => {
+  created.value = await api.post('/git/repos', { ...nr })
+  Object.assign(nr, { provider: 'github', name: '', url: '' })
+  await loadGit()
+})
+const delRepo = (r: Repo) => run(async () => { await api.del(`/git/repos/${r.repo.id}`); await loadGit() })
+const mapTo = reactive<Record<string, string>>({})
+const mapEmail = (email: string) => run(async () => { await api.post('/git/identities', { email, user_id: mapTo[email] }); await loadGit() }, t('work.saved'))
+
 const statusLabel = (s: string) => t(s === 'active' ? 'org.statusActive' : s === 'invited' ? 'org.statusInvited' : 'org.statusDeactivated')
 </script>
 
@@ -147,8 +166,14 @@ const statusLabel = (s: string) => t(s === 'active' ? 'org.statusActive' : s ===
             <tbody>
               <tr v-for="m in members" :key="m.user_id">
                 <td>{{ m.display_name }}
-                  <span v-if="m.is_admin" class="badge accent">{{ t('org.admin') }}</span>
-                  <span v-if="m.is_finance" class="badge">{{ t('org.finance') }}</span>
+                  <template v-if="!isAdmin || m.status !== 'active'">
+                    <span v-if="m.is_admin" class="badge accent">{{ t('org.admin') }}</span>
+                    <span v-if="m.is_finance" class="badge">{{ t('org.finance') }}</span>
+                  </template>
+                  <span v-else class="flags">
+                    <label class="check small"><input type="checkbox" :checked="m.is_admin" @change="setFlags(m, ($event.target as HTMLInputElement).checked, m.is_finance)" /> {{ t('org.admin') }}</label>
+                    <label class="check small"><input type="checkbox" :checked="m.is_finance" @change="setFlags(m, m.is_admin, ($event.target as HTMLInputElement).checked)" /> {{ t('org.finance') }}</label>
+                  </span>
                 </td>
                 <td>{{ m.email }}</td>
                 <td><span class="badge" :class="{ accent: m.status === 'active' }">{{ statusLabel(m.status) }}</span></td>
@@ -204,14 +229,57 @@ const statusLabel = (s: string) => t(s === 'active' ? 'org.statusActive' : s ===
           </table>
         </div>
       </section>
+      <section v-if="tab === 'git'" class="card stack" role="tabpanel">
+        <p class="muted">{{ t('git.intro') }}</p>
+        <form v-if="isAdmin" class="row" @submit.prevent="addRepo">
+          <label class="field">{{ t('git.provider') }}
+            <select v-model="nr.provider"><option value="github">GitHub</option><option value="gitea">Gitea / Forgejo</option><option value="gitlab">GitLab</option><option value="generic">{{ t('git.other') }}</option></select>
+          </label>
+          <label class="field grow">{{ t('git.name') }}<input v-model="nr.name" required maxlength="200" placeholder="acme/pay" /></label>
+          <label class="field grow">{{ t('git.url') }}<input v-model="nr.url" type="url" placeholder="https://" /></label>
+          <button class="primary end" type="submit">{{ t('git.add') }}</button>
+        </form>
+        <div v-if="created" class="notice warn stack">
+          <strong>{{ t('git.copyNow') }}</strong>
+          <div>{{ t('git.webhookUrl') }}: <code>{{ created.webhook_url }}</code></div>
+          <div>{{ t('git.secret') }}: <code>{{ created.secret }}</code></div>
+          <div class="small">{{ t('git.howTo') }}</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>{{ t('git.name') }}</th><th>{{ t('git.provider') }}</th><th>{{ t('git.webhookUrl') }}</th><th>{{ t('git.commits') }}</th><th></th></tr></thead>
+            <tbody>
+              <tr v-for="r in git.repos" :key="r.repo.id">
+                <td><a v-if="r.repo.url" :href="r.repo.url" target="_blank" rel="noopener noreferrer">{{ r.repo.name }}</a><template v-else>{{ r.repo.name }}</template></td>
+                <td>{{ r.repo.provider }}</td>
+                <td class="small"><code>{{ r.webhook_url }}</code></td>
+                <td>{{ r.repo.commits }}</td>
+                <td><button type="button" @click="delRepo(r)">{{ t('work.delete') }}</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h2 class="sub">{{ t('git.authors') }}</h2>
+        <p class="muted small">{{ t('git.authorsHelp') }}</p>
+        <ul class="plain">
+          <li v-for="i in git.identities" :key="i.email"><code>{{ i.email }}</code> → {{ i.user_name }}</li>
+        </ul>
+        <div v-for="u in git.unmapped" :key="u.email" class="row">
+          <span style="flex: 1 1 240px"><code>{{ u.email }}</code> {{ u.name }} · {{ t('git.nCommits', { n: u.commits }) }}</span>
+          <select v-model="mapTo[u.email]" :aria-label="t('org.person')"><option value="">{{ t('org.choose') }}</option><option v-for="m in activeMembers" :key="m.user_id" :value="m.user_id">{{ m.display_name }}</option></select>
+          <button type="button" :disabled="!mapTo[u.email]" @click="mapEmail(u.email)">{{ t('git.map') }}</button>
+        </div>
+      </section>
     </div>
   </Shell>
 </template>
 
 <style scoped>
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tabs button { border: 0; border-radius: 8px 8px 0 0; background: transparent; color: var(--text-2); }
-.tabs button.on { background: var(--surface); color: var(--accent); font-weight: 500; box-shadow: inset 0 -2px 0 var(--accent); }
+.flags { display: inline-flex; gap: 10px; margin-left: 8px; }
+.flags .check { height: auto; align-self: center; }
+code { font-size: 12px; overflow-wrap: anywhere; }
+.sub { font-size: 15px; margin: 8px 0 0; }
+.plain { margin: 0; padding-left: 18px; }
 .grow { flex: 1 1 200px; }
 .end { align-self: flex-end; }
 .check { display: flex; align-items: center; gap: 6px; align-self: flex-end; height: 40px; }

@@ -3,6 +3,7 @@ import zhCN from './zh-CN'
 import zhTW from './zh-TW'
 import en from './en'
 import ja from './ja'
+import { extra } from './extra'
 
 export const LOCALES = [
   { code: 'zh-CN', label: '简体中文' },
@@ -26,11 +27,23 @@ function initial(): Locale {
   return 'zh-CN'
 }
 
+type Tree = { [k: string]: string | Tree }
+function merge(a: Tree, b: Tree): Tree {
+  const out: Tree = { ...a }
+  for (const [k, v] of Object.entries(b)) out[k] = typeof v === 'object' && typeof out[k] === 'object' ? merge(out[k] as Tree, v) : v
+  return out
+}
+
 export const i18n = createI18n({
   legacy: false,
   locale: initial(),
   fallbackLocale: 'zh-CN',
-  messages: { 'zh-CN': zhCN, 'zh-TW': zhTW, en, ja },
+  messages: {
+    'zh-CN': merge(zhCN, extra['zh-CN']),
+    'zh-TW': merge(zhTW, extra['zh-TW']),
+    en: merge(en, extra.en),
+    ja: merge(ja, extra.ja),
+  },
 })
 
 export function setLocale(l: Locale) {
