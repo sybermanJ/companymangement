@@ -25,3 +25,25 @@ Add a new entry when a decision changes; do not edit old entries.
 
 ## D7 — UI mockups approved before UI code; 鉴色 colour tokens (2026-11-04, adopted from method)
 **Why:** series standard; avoids rebuilding screens.
+
+## D8 — Multi-company SaaS with row-level security (2026-11-04, Ricky)
+**Decision:** every company is a tenant; `tenant_id` on all business tables, enforced by service-layer scoping and PostgreSQL RLS. Users are global identities with memberships in one or more tenants.
+**Replaces:** the self-hosted single-company assumption in D1 (the binary stays deployable privately, but SaaS is the v1 target).
+
+## D9 — Email/password login only in v1 (2026-11-04, Ricky)
+With email verification, reset links, optional TOTP and rate limiting. SSO deferred.
+
+## D10 — Git: GitHub App plus self-hosted Git webhooks, polling fallback (2026-11-04, Ricky)
+
+## D11 — Notifications built in: inbox + SSE + Web Push + email; no IM adapters in v1 (2026-11-04, Ricky)
+
+## D12 — Cross-department hand-offs need approval (2026-11-04, Ricky)
+Approver defaults to the target's department head (project PM may also approve project items). Same-department hand-offs stay free.
+
+## D13 — PMs see hours only; money visible to Finance and tenant Admins (2026-11-04, Ricky)
+PMs still see budget percentage used.
+
+## D14 — Multi-currency: rate in pay currency, converted to project currency at entry date, both frozen (2026-11-04, Ricky)
+Finance-entered exchange rates per tenant; missing rate marks the entry *pending FX*.
+
+## D15 — Open-source Gantt: Frappe Gantt + vis-timeline behind our own Vue components (2026-11-04, Ricky)
