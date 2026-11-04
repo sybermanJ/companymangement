@@ -38,7 +38,7 @@ tar = { version = "0.4", optional = true, default-features = false }
 
 [features]
 # One self-contained executable: web app and PostgreSQL compiled in (D25).
-# Needs `web/dist` built and `vendor/postgres-linux-x86_64.txz` (scripts/build-bundle.sh).
+# Needs `web/dist` built and CM_PG_TXZ pointing at a PostgreSQL archive (scripts/build-bundle.sh).
 bundle = ["dep:include_dir", "dep:lzma-rs", "dep:tar"]
 
 [dev-dependencies]

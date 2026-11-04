@@ -16,10 +16,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 static WEB: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../../web/dist");
-static PG_TXZ: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../../vendor/postgres-linux-x86_64.txz"
-));
+// Absolute path to the platform's PostgreSQL archive, set by scripts/build-bundle.sh.
+static PG_TXZ: &[u8] = include_bytes!(env!("CM_PG_TXZ"));
 const PG_DIR: &str = "postgres-17.6";
 
 /// Serves the embedded single-page app; unknown paths get index.html.
@@ -60,6 +58,13 @@ pub async fn web(uri: Uri) -> Response {
         file.contents(),
     )
         .into_response()
+}
+
+/// True when running as root (Linux reads procfs; elsewhere a root-owned home is the hint).
+pub fn is_root() -> bool {
+    std::fs::metadata("/proc/self")
+        .map(|m| m.uid() == 0)
+        .unwrap_or_else(|_| std::env::var("USER").map(|u| u == "root").unwrap_or(false))
 }
 
 /// A running embedded PostgreSQL server.
@@ -114,9 +119,7 @@ impl Postgres {
         std::fs::create_dir_all(root).with_context(|| format!("create {}", root.display()))?;
         let root = root.canonicalize()?;
         // PostgreSQL refuses to run as root; run it as an unprivileged user instead.
-        let is_root = std::fs::metadata("/proc/self")
-            .map(|m| m.uid() == 0)
-            .unwrap_or(false);
+        let is_root = is_root();
         let run_as = is_root.then(|| {
             std::env::var("CM_PG_UID")
                 .ok()

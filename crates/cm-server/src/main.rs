@@ -24,10 +24,7 @@ async fn main() -> anyhow::Result<()> {
             let root = std::env::var("CM_DATA_DIR")
                 .map(std::path::PathBuf::from)
                 .unwrap_or_else(|_| {
-                    let is_root = std::os::unix::fs::MetadataExt::uid(
-                        &std::fs::metadata("/proc/self").expect("procfs"),
-                    ) == 0;
-                    if is_root {
+                    if cm_server::embedded::is_root() {
                         "/var/lib/hengtu".into()
                     } else {
                         "hengtu-data".into()
