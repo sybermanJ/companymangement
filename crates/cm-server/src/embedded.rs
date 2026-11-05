@@ -162,14 +162,22 @@ fn chown_tree(path: &Path, uid: u32) -> anyhow::Result<()> {
 }
 
 fn run(cmd: &mut Command, what: &str, log: &Path) -> anyhow::Result<()> {
-    let out = cmd.output().with_context(|| format!("start {what}"))?;
-    if !out.status.success() {
+    // Output goes to a file, not a pipe: `pg_ctl start` leaves the server running
+    // with the handles inherited, so on Windows a pipe would never reach EOF.
+    let out_path = log.with_extension("cmd.txt");
+    let out = std::fs::File::create(&out_path)?;
+    let status = cmd
+        .stdin(std::process::Stdio::null())
+        .stdout(out.try_clone()?)
+        .stderr(out)
+        .status()
+        .with_context(|| format!("start {what}"))?;
+    if !status.success() {
+        let said = std::fs::read_to_string(&out_path).unwrap_or_default();
         let tail = std::fs::read_to_string(log).unwrap_or_default();
         let tail: Vec<&str> = tail.lines().rev().take(15).collect();
         bail!(
-            "{what} failed: {}{}\n{}",
-            String::from_utf8_lossy(&out.stderr),
-            String::from_utf8_lossy(&out.stdout),
+            "{what} failed: {said}\n{}",
             tail.into_iter().rev().collect::<Vec<_>>().join("\n")
         );
     }
