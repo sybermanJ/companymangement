@@ -100,6 +100,8 @@ pub struct MembershipRow {
     pub tenant_name: String,
     pub is_admin: bool,
     pub is_finance: bool,
+    pub can_view_contracts: bool,
+    pub currency: String,
 }
 
 pub struct NewTenant<'a> {
@@ -173,7 +175,8 @@ pub async fn memberships_of(pool: &PgPool, user_id: Uuid) -> Result<Vec<Membersh
         .execute(&mut *tx)
         .await?;
     let rows = sqlx::query_as::<_, MembershipRow>(
-        "SELECT m.tenant_id, t.name AS tenant_name, m.is_admin, m.is_finance
+        "SELECT m.tenant_id, t.name AS tenant_name, m.is_admin, m.is_finance, m.can_view_contracts,
+                t.default_currency::text AS currency
          FROM membership m JOIN tenant t ON t.id = m.tenant_id
          WHERE m.user_id = $1 AND m.status = 'active' AND t.status <> 'suspended'
          ORDER BY m.created_at",

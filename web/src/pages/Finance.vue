@@ -86,7 +86,8 @@ const scaleMax = computed(() => {
 })
 function limitOf(x: Threshold): number | null {
   if (x.mode === 'absolute') return x.amount_minor
-  const b = detail.value?.cost.budget_minor
+  const c = detail.value?.cost
+  const b = x.metric === 'expense' ? c?.expense_budget_minor : x.metric === 'total_cost' ? c?.total_budget_minor : c?.budget_minor
   return b && x.percent ? Math.ceil((b * x.percent) / 100) : null
 }
 const pct = (v: number) => `${Math.min(100, (v / scaleMax.value) * 100)}%`
@@ -100,7 +101,8 @@ function statusText(x: Threshold): string {
   if (x.alert_state === 'acknowledged') return t('fin.firedAcked', { at: fmtDate.value.format(new Date(x.alert_fired_at!)) })
   const lim = limitOf(x)
   if (lim === null) return t('fin.inactive')
-  const obs = x.metric === 'forecast' ? detail.value!.cost.forecast_minor : detail.value!.cost.spent_minor
+  const c = detail.value!.cost
+  const obs = x.metric === 'forecast' ? c.forecast_minor : x.metric === 'expense' ? (c.expense_minor ?? 0) : x.metric === 'total_cost' ? (c.total_minor ?? 0) : c.spent_minor
   return t('fin.notFired', { gap: m(Math.max(0, lim - obs), detail.value!.cost.currency) })
 }
 function recipients(x: Threshold): string {
@@ -203,6 +205,12 @@ const exportUrl = computed(() => `/api/v1/export/timesheet.csv?from=${ex.from}&t
                 <span>{{ t('fin.costedHours', { h: hours(detail.cost.costed_minutes), r: hours(detail.cost.remaining_minutes) }) }}</span>
                 <span v-if="detail.cost.uncosted_entries" class="warn-text">{{ t('fin.uncosted', { n: detail.cost.uncosted_entries }) }}</span>
               </div>
+              <div class="row small">
+                <span>{{ t('lc.expenses') }} <strong>{{ m(detail.cost.expense_minor ?? 0, detail.cost.currency) }}</strong> / {{ m(detail.cost.expense_budget_minor ?? null, detail.cost.currency) }}</span>
+                <span>{{ t('lc.totalCost') }} <strong>{{ m(detail.cost.total_minor ?? 0, detail.cost.currency) }}</strong></span>
+                <span v-if="detail.cost.expense_in_approval_minor" class="muted">{{ t('lc.inApproval') }} {{ m(detail.cost.expense_in_approval_minor, detail.cost.currency) }}</span>
+                <RouterLink :to="`/projects/${projectId}?tab=file`">{{ t('lc.tabFile') }} →</RouterLink>
+              </div>
               <form class="row" @submit.prevent="saveBudget">
                 <label class="field">{{ t('work.budget') }} ({{ detail.cost.currency }})<input v-model="budget" type="number" min="0" step="any" /></label>
                 <button type="submit">{{ t('common.save') }}</button>
@@ -235,7 +243,7 @@ const exportUrl = computed(() => `/api/v1/export/timesheet.csv?from=${ex.from}&t
             </div>
             <form class="row" @submit.prevent="addThreshold">
               <select v-model="th.level" :aria-label="t('fin.level')"><option v-for="l in ['info', 'warn', 'critical']" :key="l" :value="l">{{ t(`fin.level_${l}`) }}</option></select>
-              <select v-model="th.metric" :aria-label="t('fin.metric')"><option value="labour_cost">{{ t('fin.metric_labour_cost') }}</option><option value="forecast">{{ t('fin.metric_forecast') }}</option></select>
+              <select v-model="th.metric" :aria-label="t('fin.metric')"><option value="labour_cost">{{ t('fin.metric_labour_cost') }}</option><option value="forecast">{{ t('fin.metric_forecast') }}</option><option value="expense">{{ t('fin.metric_expense') }}</option><option value="total_cost">{{ t('fin.metric_total_cost') }}</option></select>
               <select v-model="th.mode" :aria-label="t('fin.mode')"><option value="percent">{{ t('fin.mode_percent') }}</option><option value="absolute">{{ t('fin.mode_absolute') }}</option></select>
               <input v-if="th.mode === 'percent'" v-model.number="th.percent" type="number" min="1" max="1000" :aria-label="t('fin.mode_percent')" style="width: 90px" />
               <input v-else v-model="th.amount" type="number" min="0" step="any" :aria-label="t('fin.mode_absolute')" :placeholder="detail.cost.currency" style="width: 140px" />

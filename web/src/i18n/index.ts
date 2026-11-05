@@ -4,6 +4,7 @@ import zhTW from './zh-TW'
 import en from './en'
 import ja from './ja'
 import { extra } from './extra'
+import { lifecycle } from './lifecycle'
 
 export const LOCALES = [
   { code: 'zh-CN', label: '简体中文' },
@@ -39,10 +40,10 @@ export const i18n = createI18n({
   locale: initial(),
   fallbackLocale: 'zh-CN',
   messages: {
-    'zh-CN': merge(zhCN, extra['zh-CN']),
-    'zh-TW': merge(zhTW, extra['zh-TW']),
-    en: merge(en, extra.en),
-    ja: merge(ja, extra.ja),
+    'zh-CN': merge(merge(zhCN, extra['zh-CN']), lifecycle['zh-CN'] as unknown as Tree),
+    'zh-TW': merge(merge(zhTW, extra['zh-TW']), lifecycle['zh-TW'] as unknown as Tree),
+    en: merge(merge(en, extra.en), lifecycle.en as unknown as Tree),
+    ja: merge(merge(ja, extra.ja), lifecycle.ja as unknown as Tree),
   },
 })
 

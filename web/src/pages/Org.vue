@@ -2,13 +2,14 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Shell from './Shell.vue'
+import RoutesEditor from './lc/RoutesEditor.vue'
 import { api, type Assignment, type Department, type Member, type Role } from '../lib/api'
 import { currentMembership } from '../lib/session'
 import { errorText } from '../lib/errors'
 
 const { t } = useI18n()
-type Tab = 'departments' | 'members' | 'roles' | 'git'
-const tabs: Tab[] = ['departments', 'members', 'roles', 'git']
+type Tab = 'departments' | 'members' | 'roles' | 'routes' | 'git'
+const tabs: Tab[] = ['departments', 'members', 'roles', 'routes', 'git']
 const tab = ref<Tab>('departments')
 
 const departments = ref<Department[]>([])
@@ -89,6 +90,7 @@ const addRole = () => run(async () => {
 const asg = reactive({ user_id: '', role_id: '', department_id: '' })
 const assign = () => run(() => api.post('/role-assignments', { ...asg }))
 
+const setViewer = (m: Member, on: boolean) => run(() => api.put(`/members/${m.user_id}/contract-viewer`, { on }), t('work.saved'))
 const setFlags = (m: Member, is_admin: boolean, is_finance: boolean) => run(() => api.put(`/members/${m.user_id}/flags`, { is_admin, is_finance }), t('work.saved'))
 
 interface Repo { repo: { id: string; provider: string; name: string; url: string; project_id: string | null; commits: number }; webhook_url: string }
@@ -169,10 +171,12 @@ const statusLabel = (s: string) => t(s === 'active' ? 'org.statusActive' : s ===
                   <template v-if="!isAdmin || m.status !== 'active'">
                     <span v-if="m.is_admin" class="badge accent">{{ t('org.admin') }}</span>
                     <span v-if="m.is_finance" class="badge">{{ t('org.finance') }}</span>
+                    <span v-if="m.can_view_contracts" class="badge">{{ t('lc.contractViewer') }}</span>
                   </template>
                   <span v-else class="flags">
                     <label class="check small"><input type="checkbox" :checked="m.is_admin" @change="setFlags(m, ($event.target as HTMLInputElement).checked, m.is_finance)" /> {{ t('org.admin') }}</label>
                     <label class="check small"><input type="checkbox" :checked="m.is_finance" @change="setFlags(m, m.is_admin, ($event.target as HTMLInputElement).checked)" /> {{ t('org.finance') }}</label>
+                    <label class="check small" :title="t('lc.contractViewerHint')"><input type="checkbox" :checked="m.can_view_contracts" @change="setViewer(m, ($event.target as HTMLInputElement).checked)" /> {{ t('lc.contractViewer') }}</label>
                   </span>
                 </td>
                 <td>{{ m.email }}</td>
@@ -229,6 +233,8 @@ const statusLabel = (s: string) => t(s === 'active' ? 'org.statusActive' : s ===
           </table>
         </div>
       </section>
+      <RoutesEditor v-if="tab === 'routes'" :members="members" :is-admin="isAdmin" :currency="currentMembership()?.currency ?? 'CNY'" />
+
       <section v-if="tab === 'git'" class="card stack" role="tabpanel">
         <p class="muted">{{ t('git.intro') }}</p>
         <form v-if="isAdmin" class="row" @submit.prevent="addRepo">

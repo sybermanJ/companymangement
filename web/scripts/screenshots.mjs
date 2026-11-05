@@ -164,6 +164,44 @@ const hook = await fetch(`${base}/api/v1/hooks/git/${repo.repo.id}`, { method: '
 if (!hook.ok) { console.error('webhook failed', hook.status, await hook.text()); process.exit(1) }
 console.log('webhook', await hook.json())
 
+// --- Project lifecycle (phase 6): requests, trip with delegated booking, contract, routes ---
+await call('PUT', `/projects/${proj.id}/expense-budget`, { budget_minor: 300000 })
+await call('PUT', `/phases/${p2.id}/budget`, { budget_minor: 150000 })
+await call('POST', `/finance/projects/${proj.id}/thresholds`, { metric: 'expense', mode: 'percent', percent: 80, level: 'warn' })
+const reim = await wl('POST', '/claims', { kind: 'reimbursement', project_id: proj.id, phase_id: p1.id, title: '客户现场需求调研差旅', justification: '客户要求到现场梳理对账流程，与财务、运营两个部门开了两天工作坊。', currency: 'CNY', lines: [
+  { spent_on: d(-15), category: 'flight', description: '上海 → 成都 往返', amount_minor: 248000 },
+  { spent_on: d(-15), category: 'hotel', description: '2 晚', amount_minor: 96000 },
+  { spent_on: d(-14), category: 'local_transport', description: '打车', amount_minor: 12600 },
+  { spent_on: d(-14), category: 'meals', description: '工作餐', amount_minor: 18000 }], submit: true })
+await p2page.evaluate(async ([id]) => {
+  const f = new FormData(); f.append('label', 'invoice'); f.append('file', new Blob(['%PDF-1.4 demo'], { type: 'application/pdf' }), '机票行程单.pdf')
+  await fetch(`/api/v1/claims/${id}/documents`, { method: 'POST', body: f, headers: { 'X-Requested-With': 'cm' } })
+}, [reim.id])
+await call('POST', `/claims/${reim.id}/decide`, { action: 'approve', note: '与需求阶段计划一致' })
+await call('POST', `/claims/${reim.id}/decide`, { action: 'approve' })
+await call('POST', `/claims/${reim.id}/pay`, { reference: 'CMB-20261105-0032' })
+await wl('POST', `/claims/${reim.id}/close`, {})
+const trip = await wl('POST', '/claims', { kind: 'trip', project_id: proj.id, phase_id: p3.id, title: '上线前现场联调', justification: '上线前需要在客户机房完成支付网关联调和压测。', currency: 'CNY', destination: '成都', depart_on: d(6), return_on: d(9), travellers: [people.wanglei.id, people.zhaomin.id], lines: [{ category: 'flight', amount_minor: 420000 }, { category: 'hotel', amount_minor: 180000 }, { category: 'allowance', amount_minor: 48000 }], submit: true })
+await call('POST', `/claims/${trip.id}/decide`, { action: 'approve', note: '同意，注意控制住宿标准' })
+await wl('POST', `/claims/${trip.id}/bookings`, { to_user: people.zhaomin.id, title: `订 ${d(6)} 上海 → 成都机票 2 张`, due_on: d(2) })
+await wl('POST', '/claims', { kind: 'purchase', project_id: proj.id, phase_id: p2.id, title: '压测用云服务器（1 个月）', justification: '对账模块需要在接近生产规模的数据上压测。', currency: 'CNY', payee: '某云计算公司', lines: [{ category: 'software', description: '8 核 32G × 3 台', amount_minor: 360000 }], submit: true })
+await zc('POST', '/claims', { kind: 'reimbursement', project_id: proj.id, phase_id: p2.id, title: '对账联调加班餐费', justification: '周末与银行联调对账文件。', currency: 'CNY', lines: [{ spent_on: d(-3), category: 'meals', amount_minor: 23600 }], submit: true })
+await call('POST', '/approval-routes', { subject: 'payment', name: '大额付款', min_amount_minor: 5000000, steps: [{ kind: 'project_manager' }, { kind: 'finance' }, { kind: 'admin', label: '总经理' }] })
+const ct = await call('POST', '/contracts', { project_id: proj.id, title: '支付系统重构开发合同', counterparty: '某连锁零售集团', kind: 'sales', currency: 'USD', amount_minor: 18000000, starts_on: d(-20), ends_on: d(60), summary: '分三期付款：签约 30%，联调完成 40%，上线验收 30%。', submit: true })
+await call('POST', `/contracts/${ct.id}/status`, { status: 'signed', signed_on: d(-18) })
+for (const [ph, title, due, amt] of [[p1, '签约款 30%', d(-18), 5400000], [p2, '联调完成 40%', d(5), 7200000], [p3, '上线验收 30%', d(14), 5400000]]) {
+  const m = await call('POST', `/contracts/${ct.id}/milestones`, { phase_id: ph.id, title, due_on: due, amount_minor: amt })
+  if (title.startsWith('签约')) await call('POST', `/milestones/${m.id}/status`, { status: 'settled', settled_on: d(-10) })
+}
+await page.evaluate(async ([id]) => {
+  for (const [label, name] of [['draft', '开发合同-草稿.docx'], ['signed', '开发合同-签署版.pdf']]) {
+    const f = new FormData(); f.append('label', label); f.append('file', new Blob(['demo'], { type: 'application/pdf' }), name)
+    await fetch(`/api/v1/contracts/${id}/documents`, { method: 'POST', body: f, headers: { 'X-Requested-With': 'cm' } })
+  }
+}, [ct.id])
+await call('POST', '/contracts', { project_id: proj.id, title: '对账模块外包协议', counterparty: '某软件工作室', kind: 'outsourcing', currency: 'CNY', amount_minor: 8000000, summary: '外包对账报表开发，按验收付款。' })
+const pending = (await call('GET', '/claims?view=to_approve')).find((c) => c.kind === 'purchase')
+
 const shots = []
 async function shot(name, setup, pg = page) {
   await setup()
@@ -184,6 +222,7 @@ await shot('gantt-light', async () => { await page.goto(base + `/projects/${proj
 
 // Drag the "前端结算页" bar two days to the right and check the API saw it.
 const bar = page.locator('.bar.k-task').nth(4)
+await bar.scrollIntoViewIfNeeded()
 const box = await bar.boundingBox()
 await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
 await page.mouse.down()
@@ -232,6 +271,23 @@ await page.locator('#lang').selectOption('zh-CN')
 await page.evaluate(() => { document.documentElement.dataset.theme = 'light' })
 await shot('overview-light', async () => { await page.goto(base + '/overview') })
 await shot('team-light', async () => { await page.goto(base + '/team'); await page.getByRole('button', { name: '王磊' }).click(); await page.waitForTimeout(500) })
+await shot('requests-approve-light', async () => { await page.goto(base + `/requests?view=to_approve&id=${pending.id}`); await page.waitForTimeout(500) })
+await shot('requests-all-light', async () => { await page.goto(base + `/requests?view=all&id=${trip.id}`); await page.waitForTimeout(500) })
+await shot('request-new-trip-light', async () => { await p2page.goto(base + '/requests?new=trip'); await p2page.waitForTimeout(500) }, p2page)
+await shot('contracts-light', async () => { await page.goto(base + `/contracts?id=${ct.id}`); await page.waitForTimeout(500) })
+await shot('project-file-light', async () => { await page.goto(base + `/projects/${proj.id}?tab=file`); await page.waitForTimeout(600) })
+await shot('org-routes-light', async () => { await page.goto(base + '/org'); await page.getByRole('tab', { name: '审批流程' }).click(); await page.waitForTimeout(300) })
+await shot('project-file-en-dark', async () => {
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+  await page.locator('#lang').selectOption('en')
+  await page.goto(base + `/projects/${proj.id}?tab=file`); await page.waitForTimeout(600)
+})
+await page.locator('#lang').selectOption('zh-CN')
+await page.evaluate(() => { document.documentElement.dataset.theme = 'light' })
+await page.setViewportSize({ width: 390, height: 844 })
+await shot('requests-phone-ja', async () => { await page.locator('#lang').selectOption('ja'); await page.goto(base + `/requests?view=to_approve&id=${pending.id}`); await page.waitForTimeout(500) })
+await shot('project-file-phone', async () => { await page.locator('#lang').selectOption('zh-CN'); await page.goto(base + `/projects/${proj.id}?tab=file`); await page.waitForTimeout(600) })
+await page.setViewportSize({ width: 1280, height: 800 })
 await shot('inbox-light', async () => { await page.goto(base + '/inbox') })
 await shot('routines-light', async () => { await page.goto(base + '/routines') })
 await shot('finance-costs-light', async () => { await page.goto(base + '/finance') })

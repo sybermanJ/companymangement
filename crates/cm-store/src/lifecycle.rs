@@ -1995,7 +1995,7 @@ pub async fn project_file(t: &mut TenantTx, v: &Viewer, project: Uuid) -> Result
     let events: Vec<(DateTime<Utc>, String, String, Value, Option<String>, String)> = sqlx::query_as(
         "SELECT e.created_at, u.display_name, e.kind, e.payload, w.key, w.title
          FROM work_item_event e JOIN work_item w ON w.id = e.work_item_id JOIN app_user u ON u.id = e.actor_id
-         WHERE w.project_id = $1 AND e.kind IN ('created', 'status', 'reassigned', 'deliverable_submitted', 'commit_linked', 'attachment_added')
+         WHERE w.project_id = $1 AND e.kind IN ('created', 'status_changed', 'reassigned', 'deliverable_submitted', 'commit_linked', 'attachment_added')
          ORDER BY e.created_at DESC LIMIT 400",
     )
     .bind(project)

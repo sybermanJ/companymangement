@@ -30,10 +30,10 @@ export const api = {
   del: <T>(p: string) => request<T>('DELETE', p),
 }
 
-export interface Membership { tenant_id: string; tenant_name: string; is_admin: boolean; is_finance: boolean }
+export interface Membership { tenant_id: string; tenant_name: string; is_admin: boolean; is_finance: boolean; can_view_contracts?: boolean; currency?: string }
 export interface Me { user_id: string; tenant_id: string; email: string; name: string; email_verified: boolean; memberships: Membership[] }
 export interface Department { id: string; parent_id: string | null; name: string; head_user_id: string | null }
-export interface Member { user_id: string; email: string; display_name: string; status: string; is_admin: boolean; is_finance: boolean }
+export interface Member { user_id: string; email: string; display_name: string; status: string; is_admin: boolean; is_finance: boolean; can_view_contracts?: boolean }
 export interface Role { id: string; department_id: string | null; name: string }
 export interface Assignment { user_id: string; role_id: string; role_name: string; department_id: string; department_name: string }
 
@@ -46,6 +46,7 @@ export interface Project {
 export interface ProjectCost {
   currency: string; budget_minor: number | null; spent_minor: number; forecast_minor: number; used_pct: number | null
   costed_minutes: number; uncosted_entries: number; remaining_minutes: number
+  expense_minor?: number; expense_budget_minor?: number | null; expense_in_approval_minor?: number; total_minor?: number; total_budget_minor?: number | null
 }
 export interface Item {
   id: string; project_id: string | null; parent_id: string | null; kind: 'phase' | 'task' | 'milestone' | 'routine' | 'request'

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Shell from './Shell.vue'
 import Gantt from './Gantt.vue'
 import ItemPanel from './ItemPanel.vue'
+import ProjectFile from './lc/ProjectFile.vue'
 import { api, ApiError, type Dependency, type Item, type Member, type Project } from '../lib/api'
 import { errorText } from '../lib/errors'
 import { hours } from '../lib/dates'
@@ -22,6 +23,12 @@ const error = ref('')
 const notice = ref('')
 const open = ref<string | null>(typeof route.query.item === 'string' ? route.query.item : null)
 const scale = ref<'day' | 'week'>('day')
+const router = useRouter()
+const tab = ref<'plan' | 'file'>(route.query.tab === 'file' ? 'file' : 'plan')
+function setTab(v: 'plan' | 'file') {
+  tab.value = v
+  router.replace({ query: { ...route.query, tab: v === 'file' ? 'file' : undefined } })
+}
 
 async function load() {
   const d = await api.get<{ project: Project; items: Item[]; dependencies: Dependency[]; can_manage: boolean }>(`/projects/${id.value}`)
@@ -95,11 +102,11 @@ const showForms = ref(false)
             <h1>{{ project.name }}</h1>
           </div>
           <div class="row">
-            <div role="group" :aria-label="t('work.gantt')" class="seg">
+            <div v-if="tab === 'plan'" role="group" :aria-label="t('work.gantt')" class="seg">
               <button type="button" :class="{ primary: scale === 'day' }" :aria-pressed="scale === 'day'" @click="scale = 'day'">{{ t('work.dayView') }}</button>
               <button type="button" :class="{ primary: scale === 'week' }" :aria-pressed="scale === 'week'" @click="scale = 'week'">{{ t('work.weekView') }}</button>
             </div>
-            <button v-if="canManage" class="primary" type="button" @click="showForms = !showForms">+ {{ t('work.addItem') }}</button>
+            <button v-if="canManage && tab === 'plan'" class="primary" type="button" @click="showForms = !showForms">+ {{ t('work.addItem') }}</button>
           </div>
         </div>
 
@@ -111,7 +118,13 @@ const showForms = ref(false)
           <div v-else-if="project.budget_used_pct !== null" class="card"><div class="muted small">{{ t('rep.budgetUsed') }}</div><div class="big">{{ project.budget_used_pct }}%</div></div>
         </div>
 
-        <div v-if="showForms && canManage" class="card stack">
+        <div role="tablist" class="tabs" :aria-label="project.name">
+          <button role="tab" type="button" :aria-selected="tab === 'plan'" :class="{ on: tab === 'plan' }" @click="setTab('plan')">{{ t('lc.tabPlan') }}</button>
+          <button role="tab" type="button" :aria-selected="tab === 'file'" :class="{ on: tab === 'file' }" @click="setTab('file')">{{ t('lc.tabFile') }}</button>
+        </div>
+        <ProjectFile v-if="tab === 'file'" :project="project" />
+
+        <div v-if="tab === 'plan' && showForms && canManage" class="card stack">
           <form class="row" @submit.prevent="addItem">
             <label class="field">{{ t('work.kind') }}
               <select v-model="f.kind"><option value="task">{{ t('work.task') }}</option><option value="phase">{{ t('work.phase') }}</option><option value="milestone">{{ t('work.milestone') }}</option></select>
@@ -139,7 +152,7 @@ const showForms = ref(false)
           </form>
         </div>
 
-        <div class="layout" :class="{ withPanel: !!open }">
+        <div v-if="tab === 'plan'" class="layout" :class="{ withPanel: !!open }">
           <div class="stack" style="min-width: 0">
             <Gantt :items="items" :dependencies="deps" :can-manage="canManage" :scale="scale" @open="(i) => (open = i.id)" @reschedule="reschedule" />
             <div class="legend muted small">

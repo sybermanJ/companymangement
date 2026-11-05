@@ -6,6 +6,8 @@ import Shell from './Shell.vue'
 import { api, type Handoff, type Notification } from '../lib/api'
 import { errorText } from '../lib/errors'
 import { unread } from '../lib/live'
+import { money } from '../lib/money'
+import type { Claim, Contract } from '../lib/lifecycle'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -17,7 +19,10 @@ const notice = ref('')
 const reason = reactive<Record<string, string>>({})
 const fmt = computed(() => new Intl.DateTimeFormat(locale.value, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }))
 
+const money_ = ref<{ claims: Claim[]; contracts: Contract[]; to_pay: Claim[]; to_confirm: Claim[] }>({ claims: [], contracts: [], to_pay: [], to_confirm: [] })
+const moneyCount = computed(() => money_.value.claims.length + money_.value.contracts.length + money_.value.to_pay.length + money_.value.to_confirm.length)
 async function load() {
+  money_.value = await api.get<typeof money_.value>('/approvals/waiting').catch(() => money_.value)
   const d = await api.get<{ to_approve: Handoff[]; to_accept: Handoff[]; notifications: Notification[]; unread: number }>('/inbox')
   toApprove.value = d.to_approve
   toAccept.value = d.to_accept
@@ -55,6 +60,17 @@ const itemLink = (h: Handoff) => (h.project_id ? `/projects/${h.project_id}?item
       <h1>{{ t('nav.inbox') }}</h1>
       <p v-if="error" class="notice error" role="alert">{{ error }}</p>
       <p v-if="notice" class="notice ok" role="status">{{ notice }}</p>
+
+      <section class="stack">
+        <h2>{{ t('lc.inboxTitle') }} <span class="muted">({{ moneyCount }})</span></h2>
+        <p v-if="!moneyCount" class="empty">{{ t('flow.nothing') }}</p>
+        <ul v-else class="notes">
+          <li v-for="c in money_.claims" :key="c.id"><RouterLink class="note" :to="`/requests?id=${c.id}`"><span class="pill level-warn">{{ t('lc.toApprove') }}</span><span class="subject">{{ c.key }} {{ c.title }} <span class="muted small">— {{ c.applicant_name }} · {{ money(c.amount_minor, c.currency, locale) }}<template v-if="c.phase_title"> · {{ c.phase_title }}</template></span></span></RouterLink></li>
+          <li v-for="c in money_.contracts" :key="c.id"><RouterLink class="note" :to="`/contracts?id=${c.id}`"><span class="pill level-warn">{{ t('lc.contractToApprove') }}</span><span class="subject">{{ c.key }} {{ c.title }} <span class="muted small">— {{ c.counterparty }} · {{ money(c.amount_minor, c.currency, locale) }}</span></span></RouterLink></li>
+          <li v-for="c in money_.to_pay" :key="c.id"><RouterLink class="note" :to="`/requests?id=${c.id}&view=to_pay`"><span class="pill level-info">{{ t('lc.toPay') }}</span><span class="subject">{{ c.key }} {{ c.title }} <span class="muted small">— {{ c.applicant_name }} · {{ money(c.amount_minor, c.currency, locale) }}</span></span></RouterLink></li>
+          <li v-for="c in money_.to_confirm" :key="c.id"><RouterLink class="note" :to="`/requests?id=${c.id}`"><span class="pill level-info">{{ t('lc.toConfirm') }}</span><span class="subject">{{ c.key }} {{ c.title }} <span class="muted small">— {{ money(c.amount_minor, c.currency, locale) }}</span></span></RouterLink></li>
+        </ul>
+      </section>
 
       <section class="stack">
         <h2>{{ t('flow.toApprove') }} <span class="muted">({{ toApprove.length }})</span></h2>
@@ -100,7 +116,7 @@ const itemLink = (h: Handoff) => (h.project_id ? `/projects/${h.project_id}?item
         <ul class="notes">
           <li v-for="n in notes" :key="n.id">
             <button type="button" class="note" :class="{ unread: !n.read_at }" @click="openNote(n)">
-              <span class="pill" :class="n.kind === 'alert' ? 'level-critical' : n.kind.startsWith('handoff') ? 'level-warn' : 'level-info'">{{ t(`flow.n_${n.kind}`) }}</span>
+              <span class="pill" :class="n.kind === 'alert' ? 'level-critical' : n.kind.startsWith('handoff') || n.kind === 'approval_request' ? 'level-warn' : 'level-info'">{{ t(`flow.n_${n.kind}`) }}</span>
               <span class="subject">{{ n.subject }}<span v-if="n.body" class="muted small"> — {{ n.body }}</span></span>
               <span class="muted small">{{ fmt.format(new Date(n.created_at)) }}</span>
             </button>
@@ -114,7 +130,7 @@ const itemLink = (h: Handoff) => (h.project_id ? `/projects/${h.project_id}?item
 <style scoped>
 h2 { font-size: 16px; margin: 0; }
 .notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.note { width: 100%; height: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; text-align: left; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--text); }
+.note { text-decoration: none; box-sizing: border-box; width: 100%; height: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; text-align: left; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--text); }
 .note.unread { border-left: 4px solid var(--accent); font-weight: 500; }
 .subject { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; }
 </style>

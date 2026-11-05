@@ -219,11 +219,12 @@ pub struct MemberRow {
     pub status: String,
     pub is_admin: bool,
     pub is_finance: bool,
+    pub can_view_contracts: bool,
 }
 
 pub async fn list_members(t: &mut TenantTx) -> Result<Vec<MemberRow>> {
     Ok(sqlx::query_as::<_, MemberRow>(
-        "SELECT m.user_id, u.email, u.display_name, m.status, m.is_admin, m.is_finance
+        "SELECT m.user_id, u.email, u.display_name, m.status, m.is_admin, m.is_finance, m.can_view_contracts
          FROM membership m JOIN app_user u ON u.id = m.user_id
          WHERE m.tenant_id = $1 ORDER BY m.created_at",
     )

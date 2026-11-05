@@ -13,7 +13,7 @@ const theme = ref(document.documentElement.dataset.theme ?? 'light')
 const sees = computed(() => !!(currentMembership()?.is_admin || currentMembership()?.is_finance))
 const NAV = computed(() => [
   { k: 'overview', to: '/overview' }, { k: 'projects', to: '/projects' }, { k: 'team', to: '/team' },
-  { k: 'mine', to: '/my' }, { k: 'routines', to: '/routines' },
+  { k: 'mine', to: '/my' }, { k: 'requests', to: '/requests' }, { k: 'contracts', to: '/contracts' }, { k: 'routines', to: '/routines' },
   ...(sees.value ? [{ k: 'finance', to: '/finance' }] : []), { k: 'org', to: '/org' },
 ])
 onMounted(startLive)
