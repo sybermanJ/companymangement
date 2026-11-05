@@ -87,6 +87,8 @@ pub struct ProjectRow {
     pub currency: String,
     /// Money: only for Finance/Admin. The API strips it for everyone else.
     pub labour_budget_minor: Option<i64>,
+    pub expense_budget_minor: Option<i64>,
+    pub customer: String,
     pub estimate_minutes: i64,
     pub logged_minutes: i64,
     pub open_items: i64,
@@ -95,7 +97,7 @@ pub struct ProjectRow {
 
 const PROJECT_SELECT: &str = "
     SELECT p.id, p.key, p.name, p.owner_id, u.display_name AS owner_name, p.department_id, p.status,
-           p.planned_start, p.planned_end, p.currency, p.labour_budget_minor,
+           p.planned_start, p.planned_end, p.currency, p.labour_budget_minor, p.expense_budget_minor, p.customer,
            COALESCE((SELECT sum(estimate_minutes) FROM work_item w WHERE w.project_id = p.id AND w.kind <> 'phase'), 0)::bigint AS estimate_minutes,
            COALESCE((SELECT sum(l.minutes) FROM work_log l JOIN work_item w ON w.id = l.work_item_id WHERE w.project_id = p.id), 0)::bigint AS logged_minutes,
            (SELECT count(*) FROM work_item w WHERE w.project_id = p.id AND w.kind NOT IN ('phase', 'milestone') AND w.status NOT IN ('done', 'cancelled')) AS open_items,
@@ -183,6 +185,10 @@ pub struct ItemRow {
     pub requested_by: Option<Uuid>,
     pub handoff_count: i64,
     pub open_handoff: Option<String>,
+    /// Expense budget of a phase.
+    pub budget_minor: Option<i64>,
+    /// The request (e.g. a trip) this item was created for.
+    pub claim_id: Option<Uuid>,
 }
 
 pub(crate) const ITEM_SELECT: &str = "
@@ -192,7 +198,8 @@ pub(crate) const ITEM_SELECT: &str = "
            COALESCE((SELECT sum(minutes) FROM work_log l WHERE l.work_item_id = w.id), 0)::bigint AS logged_minutes,
            w.target_role_id, w.target_department_id, w.routine_template_id, w.occurrence_date, w.requested_by,
            (SELECT count(*) FROM handoff h WHERE h.work_item_id = w.id AND h.state = 'accepted') AS handoff_count,
-           (SELECT h.state FROM handoff h WHERE h.work_item_id = w.id AND h.state IN ('pending_approval', 'pending_accept')) AS open_handoff
+           (SELECT h.state FROM handoff h WHERE h.work_item_id = w.id AND h.state IN ('pending_approval', 'pending_accept')) AS open_handoff,
+           w.budget_minor, w.claim_id
     FROM work_item w LEFT JOIN app_user u ON u.id = w.holder_user_id";
 
 pub struct NewItem<'a> {

@@ -641,6 +641,41 @@ fn clean_name(name: &str) -> String {
     }
 }
 
+/// Streams one multipart file field to storage. Returns (id, clean name, mime, stored).
+pub(crate) async fn store_field(
+    s: &AppState,
+    session: &Session,
+    field: axum::extract::multipart::Field<'_>,
+) -> Result<(Uuid, String, String, crate::storage::Stored), ApiError> {
+    let file_name = clean_name(field.file_name().unwrap_or("file"));
+    let mime = field
+        .content_type()
+        .unwrap_or("application/octet-stream")
+        .to_ascii_lowercase();
+    let id = Uuid::now_v7();
+    let stored = s
+        .storage
+        .put(session.tenant_id, id, field, MAX_UPLOAD_BYTES)
+        .await
+        .map_err(|e| match e {
+            StorageError::TooLarge => ApiError::new(
+                StatusCode::PAYLOAD_TOO_LARGE,
+                "too_large",
+                "file is larger than 200 MB",
+            ),
+            StorageError::Upload(m) => ApiError::bad_request(m),
+            StorageError::Io(e) => {
+                tracing::error!(error = %e, "storage write failed");
+                ApiError::new(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "internal",
+                    "could not store the file",
+                )
+            }
+        })?;
+    Ok((id, file_name, mime, stored))
+}
+
 pub async fn upload_attachment(
     State(s): State<AppState>,
     session: Session,
@@ -679,32 +714,7 @@ pub async fn upload_attachment(
                 );
             }
             Some("file") => {
-                let file_name = clean_name(field.file_name().unwrap_or("file"));
-                let mime = field
-                    .content_type()
-                    .unwrap_or("application/octet-stream")
-                    .to_ascii_lowercase();
-                let id = Uuid::now_v7();
-                let stored = s
-                    .storage
-                    .put(session.tenant_id, id, field, MAX_UPLOAD_BYTES)
-                    .await
-                    .map_err(|e| match e {
-                        StorageError::TooLarge => ApiError::new(
-                            StatusCode::PAYLOAD_TOO_LARGE,
-                            "too_large",
-                            "file is larger than 200 MB",
-                        ),
-                        StorageError::Upload(m) => ApiError::bad_request(m),
-                        StorageError::Io(e) => {
-                            tracing::error!(error = %e, "storage write failed");
-                            ApiError::new(
-                                StatusCode::INTERNAL_SERVER_ERROR,
-                                "internal",
-                                "could not store the file",
-                            )
-                        }
-                    })?;
+                let (id, file_name, mime, stored) = store_field(&s, &session, field).await?;
                 uploaded.push((id, file_name, mime, stored));
             }
             _ => {}
@@ -762,21 +772,31 @@ pub async fn download_attachment(
     let (mut t, _) = begin(&s, &session).await?;
     let a = w::get_attachment(&mut t, id).await?;
     t.commit().await?;
+    serve_file(&s, &a.object_key, &a.mime, &a.file_name).await
+}
+
+/// Sends a stored file. Only safe types render inline; everything else downloads.
+pub(crate) async fn serve_file(
+    s: &AppState,
+    key: &str,
+    mime: &str,
+    file_name: &str,
+) -> Result<Response, ApiError> {
     let file = s
         .storage
-        .open(&a.object_key)
+        .open(key)
         .await
         .map_err(|_| ApiError::from(StoreError::NotFound))?;
-    let inline = inline_safe(&a.mime);
+    let inline = inline_safe(mime);
     let ctype = if inline {
-        a.mime.as_str()
+        mime
     } else {
         "application/octet-stream"
     };
     let disposition = format!(
         "{}; filename*=UTF-8''{}",
         if inline { "inline" } else { "attachment" },
-        a.file_name
+        file_name
             .bytes()
             .map(|b| if b.is_ascii_alphanumeric() || b"-._".contains(&b) {
                 (b as char).to_string()

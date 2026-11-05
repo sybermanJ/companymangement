@@ -12,6 +12,7 @@ pub mod accounts;
 pub mod finance;
 pub mod flow;
 pub mod git;
+pub mod lifecycle;
 pub mod reports;
 pub mod work;
 

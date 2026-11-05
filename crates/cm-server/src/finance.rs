@@ -256,12 +256,14 @@ pub async fn create_threshold(
     Path(project): Path<Uuid>,
     Json(b): Json<ThresholdBody>,
 ) -> Result<impl IntoResponse, ApiError> {
-    if !matches!(b.metric.as_str(), "labour_cost" | "forecast")
-        || !matches!(b.mode.as_str(), "absolute" | "percent")
+    if !matches!(
+        b.metric.as_str(),
+        "labour_cost" | "forecast" | "expense" | "total_cost"
+    ) || !matches!(b.mode.as_str(), "absolute" | "percent")
         || !matches!(b.level.as_str(), "info" | "warn" | "critical")
     {
         return Err(ApiError::bad_request(
-            "metric labour_cost|forecast, mode absolute|percent, level info|warn|critical",
+            "metric labour_cost|forecast|expense|total_cost, mode absolute|percent, level info|warn|critical",
         ));
     }
     let (amount, percent) = match b.mode.as_str() {

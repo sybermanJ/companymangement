@@ -8,17 +8,13 @@ use serde_json::{json, Value};
 use tower::ServiceExt;
 use uuid::Uuid;
 
-static POOL: tokio::sync::OnceCell<Option<sqlx::PgPool>> = tokio::sync::OnceCell::const_new();
-
+/// A fresh pool each time: every `#[tokio::test]` has its own runtime, and a
+/// pool shared across runtimes fails once the first runtime shuts down.
 async fn db() -> Option<sqlx::PgPool> {
-    POOL.get_or_init(|| async {
-        let url = std::env::var("DATABASE_URL").ok()?;
-        let pool = cm_store::connect(&url).await.expect("connect");
-        cm_store::migrate(&pool).await.expect("migrate");
-        Some(pool)
-    })
-    .await
-    .clone()
+    let url = std::env::var("DATABASE_URL").ok()?;
+    let pool = cm_store::connect(&url).await.expect("connect");
+    cm_store::migrate(&pool).await.expect("migrate");
+    Some(pool)
 }
 
 /// The raw token from the newest email sent to `to`.

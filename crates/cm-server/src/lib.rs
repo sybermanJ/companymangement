@@ -11,6 +11,7 @@ mod finance;
 mod flow;
 mod git;
 pub mod jobs;
+mod lifecycle;
 mod limiter;
 pub mod mail;
 mod reports;
@@ -164,6 +165,69 @@ pub fn router(state: AppState) -> Router {
         .route("/git/repos", get(git::list).post(git::create))
         .route("/git/repos/{id}", axum::routing::delete(git::delete))
         .route("/git/identities", post(git::set_identity))
+        // phase 6: project lifecycle
+        .route(
+            "/approval-routes",
+            get(lifecycle::list_routes).post(lifecycle::create_route),
+        )
+        .route(
+            "/approval-routes/{id}",
+            axum::routing::put(lifecycle::update_route).delete(lifecycle::delete_route),
+        )
+        .route(
+            "/members/{id}/contract-viewer",
+            axum::routing::put(lifecycle::set_contract_viewer),
+        )
+        .route(
+            "/claims",
+            get(lifecycle::list_claims).post(lifecycle::create_claim),
+        )
+        .route(
+            "/claims/{id}",
+            get(lifecycle::get_claim).put(lifecycle::update_claim),
+        )
+        .route("/claims/{id}/submit", post(lifecycle::submit_claim))
+        .route("/claims/{id}/decide", post(lifecycle::decide_claim))
+        .route("/claims/{id}/cancel", post(lifecycle::cancel_claim))
+        .route("/claims/{id}/pay", post(lifecycle::pay_claim))
+        .route("/claims/{id}/close", post(lifecycle::close_claim))
+        .route("/claims/{id}/bookings", post(lifecycle::delegate_booking))
+        .route(
+            "/{owner}/{id}/documents",
+            post(lifecycle::upload_document).layer(axum::extract::DefaultBodyLimit::max(
+                work::MAX_UPLOAD_BYTES as usize + 1024 * 1024,
+            )),
+        )
+        .route("/documents/{id}", get(lifecycle::download_document))
+        .route(
+            "/contracts",
+            get(lifecycle::list_contracts).post(lifecycle::create_contract),
+        )
+        .route(
+            "/contracts/{id}",
+            get(lifecycle::get_contract).put(lifecycle::update_contract),
+        )
+        .route("/contracts/{id}/submit", post(lifecycle::submit_contract))
+        .route("/contracts/{id}/decide", post(lifecycle::decide_contract))
+        .route(
+            "/contracts/{id}/status",
+            post(lifecycle::set_contract_status),
+        )
+        .route("/contracts/{id}/milestones", post(lifecycle::add_milestone))
+        .route(
+            "/milestones/{id}/status",
+            post(lifecycle::set_milestone_status),
+        )
+        .route("/projects/{id}/file", get(lifecycle::project_file))
+        .route(
+            "/projects/{id}/expense-budget",
+            axum::routing::put(lifecycle::set_expense_budget),
+        )
+        .route(
+            "/phases/{id}/budget",
+            axum::routing::put(lifecycle::set_phase_budget),
+        )
+        .route("/approvals/waiting", get(lifecycle::waiting))
         .layer(middleware::from_fn(csrf_guard));
     // Webhooks come from Git servers, not browsers: no session, no CSRF
     // header; they are authenticated by their signature instead.

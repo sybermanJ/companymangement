@@ -27,7 +27,7 @@ pub async fn next_counter(t: &mut TenantTx, name: &str) -> Result<i32> {
 /// Insert an item that is not created through the project planner
 /// (routine instances and requests). Returns the new id.
 #[allow(clippy::too_many_arguments)]
-async fn insert_loose_item(
+pub(crate) async fn insert_loose_item(
     t: &mut TenantTx,
     actor: Uuid,
     kind: &str,
@@ -188,7 +188,7 @@ pub(crate) async fn admin_people(t: &mut TenantTx) -> Result<Vec<Uuid>> {
     admins(t).await
 }
 
-async fn display_name(t: &mut TenantTx, user: Uuid) -> Result<String> {
+pub async fn display_name(t: &mut TenantTx, user: Uuid) -> Result<String> {
     let r: Option<(String,)> = sqlx::query_as("SELECT display_name FROM app_user WHERE id = $1")
         .bind(user)
         .fetch_optional(&mut *t.tx)
@@ -196,14 +196,14 @@ async fn display_name(t: &mut TenantTx, user: Uuid) -> Result<String> {
     Ok(r.map(|x| x.0).unwrap_or_default())
 }
 
-fn item_label(it: &ItemRow) -> String {
+pub(crate) fn item_label(it: &ItemRow) -> String {
     match &it.key {
         Some(k) => format!("{k} {}", it.title),
         None => it.title.clone(),
     }
 }
 
-fn item_link(it: &ItemRow) -> String {
+pub(crate) fn item_link(it: &ItemRow) -> String {
     match it.project_id {
         Some(p) => format!("/projects/{p}?item={}", it.id),
         None => format!("/my?item={}", it.id),

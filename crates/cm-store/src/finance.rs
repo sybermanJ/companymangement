@@ -270,7 +270,7 @@ pub async fn missing_rates(t: &mut TenantTx) -> Result<Vec<Value>> {
         .collect())
 }
 
-async fn fx_on(
+pub(crate) async fn fx_on(
     t: &mut TenantTx,
     from: &str,
     to: &str,
@@ -493,6 +493,12 @@ pub struct ProjectCost {
     pub costed_minutes: i64,
     pub uncosted_entries: i64,
     pub remaining_minutes: i64,
+    /// Approved expense requests (travel, purchases, payments) in the project currency.
+    pub expense_minor: i64,
+    pub expense_budget_minor: Option<i64>,
+    pub expense_in_approval_minor: i64,
+    pub total_minor: i64,
+    pub total_budget_minor: Option<i64>,
 }
 
 pub async fn project_cost(t: &mut TenantTx, project: Uuid) -> Result<ProjectCost> {
@@ -521,8 +527,18 @@ pub async fn project_cost(t: &mut TenantTx, project: Uuid) -> Result<ProjectCost
     } else {
         spent
     };
+    let ex = crate::lifecycle::project_expenses(t, project).await?;
+    let total_budget = match (p.labour_budget_minor, p.expense_budget_minor) {
+        (None, None) => None,
+        (a, b) => Some(a.unwrap_or(0).saturating_add(b.unwrap_or(0))),
+    };
     Ok(ProjectCost {
         currency: p.currency.clone(),
+        expense_minor: ex.total_minor,
+        expense_budget_minor: p.expense_budget_minor,
+        expense_in_approval_minor: ex.in_approval_minor,
+        total_minor: spent.saturating_add(ex.total_minor),
+        total_budget_minor: total_budget,
         budget_minor: p.labour_budget_minor,
         spent_minor: spent,
         forecast_minor: forecast,
@@ -756,12 +772,14 @@ pub async fn evaluate_project(t: &mut TenantTx, project: Uuid) -> Result<()> {
             },
             _ => continue,
         };
-        let observed = if th.metric == "forecast" {
-            cost.forecast_minor
-        } else {
-            cost.spent_minor
+        let (observed, budget) = match th.metric.as_str() {
+            "forecast" => (cost.forecast_minor, cost.budget_minor),
+            "expense" => (cost.expense_minor, cost.expense_budget_minor),
+            "total_cost" => (cost.total_minor, cost.total_budget_minor),
+            _ => (cost.spent_minor, cost.budget_minor),
         };
-        match threshold::evaluate(rule, cost.budget_minor, observed, th.alert_state.is_some()) {
+        let used_pct = threshold::budget_used_percent(observed, budget);
+        match threshold::evaluate(rule, budget, observed, th.alert_state.is_some()) {
             Evaluation::Fire { limit_minor } => {
                 sqlx::query(
                     "INSERT INTO alert (id, tenant_id, threshold_id, project_id, level, observed_minor, limit_minor)
@@ -776,8 +794,7 @@ pub async fn evaluate_project(t: &mut TenantTx, project: Uuid) -> Result<()> {
                 .bind(limit_minor)
                 .execute(&mut *t.tx)
                 .await?;
-                let pct = cost
-                    .used_pct
+                let pct = used_pct
                     .map(|x| format!("{x}%"))
                     .unwrap_or_else(|| "—".into());
                 let words = alert_words(&locale, &th.level, &th.metric);
@@ -881,26 +898,36 @@ struct AlertWords {
 
 /// Alert texts go to the inbox and by email, so they follow the company language.
 fn alert_words(locale: &str, level: &str, metric: &str) -> AlertWords {
-    let forecast = metric == "forecast";
-    let (lv, m, used): ([&'static str; 3], [&'static str; 2], &'static str) = match locale {
+    let mi = match metric {
+        "forecast" => 1,
+        "expense" => 2,
+        "total_cost" => 3,
+        _ => 0,
+    };
+    let (lv, m, used): ([&'static str; 3], [&'static str; 4], &'static str) = match locale {
         "zh-TW" => (
             ["提示", "預警", "嚴重"],
-            ["人工成本", "預測完工成本"],
+            ["人工成本", "預測完工成本", "費用支出", "總成本"],
             "：預算已用 ",
         ),
         "ja" => (
             ["情報", "警告", "重大"],
-            ["人件費", "完了時予測"],
+            ["人件費", "完了時予測", "経費", "総コスト"],
             "：予算使用率 ",
         ),
         "en" => (
             ["Info", "Warning", "Critical"],
-            ["labour cost", "forecast at completion"],
+            [
+                "labour cost",
+                "forecast at completion",
+                "expenses",
+                "total cost",
+            ],
             ": budget used ",
         ),
         _ => (
             ["提示", "预警", "严重"],
-            ["人工成本", "预测完工成本"],
+            ["人工成本", "预测完工成本", "费用支出", "总成本"],
             "：预算已用 ",
         ),
     };
@@ -910,7 +937,7 @@ fn alert_words(locale: &str, level: &str, metric: &str) -> AlertWords {
             "warn" => lv[1],
             _ => lv[0],
         },
-        metric: m[usize::from(forecast)],
+        metric: m[mi],
         used,
     }
 }
