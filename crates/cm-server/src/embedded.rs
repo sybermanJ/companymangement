@@ -19,7 +19,20 @@ static PG_TXZ: &[u8] = include_bytes!(env!("CM_PG_TXZ"));
 // PostgreSQL for Windows is built with MSVC and needs its runtime, which a fresh
 // Windows may not have; Microsoft allows shipping it next to the program.
 #[cfg(windows)]
-static VCRUNTIME: &[u8] = include_bytes!(env!("CM_VCRUNTIME"));
+static VC_RUNTIME: [(&str, &[u8]); 3] = [
+    (
+        "vcruntime140.dll",
+        include_bytes!(concat!(env!("CM_VCRT_DIR"), "/vcruntime140.dll")),
+    ),
+    (
+        "vcruntime140_1.dll",
+        include_bytes!(concat!(env!("CM_VCRT_DIR"), "/vcruntime140_1.dll")),
+    ),
+    (
+        "msvcp140.dll",
+        include_bytes!(concat!(env!("CM_VCRT_DIR"), "/msvcp140.dll")),
+    ),
+];
 const PG_DIR: &str = "postgres-17.6";
 
 /// Serves the embedded single-page app; unknown paths get index.html.
@@ -99,6 +112,14 @@ fn as_user(c: &mut Command, uid: Option<u32>) {
     let _ = (c, uid);
 }
 
+/// Windows `canonicalize` returns `\\?\C:\...`, which PostgreSQL's tools cannot parse.
+fn plain_path(p: PathBuf) -> PathBuf {
+    match p.to_str().and_then(|s| s.strip_prefix(r"\\?\")) {
+        Some(rest) if !rest.starts_with("UNC") => PathBuf::from(rest),
+        _ => p,
+    }
+}
+
 fn exe(name: &str) -> String {
     format!("{name}{}", std::env::consts::EXE_SUFFIX)
 }
@@ -159,7 +180,7 @@ impl Postgres {
     /// Unpacks (once), initialises (once) and starts PostgreSQL under `root`.
     pub async fn start(root: &Path, port: u16) -> anyhow::Result<Self> {
         std::fs::create_dir_all(root).with_context(|| format!("create {}", root.display()))?;
-        let root = root.canonicalize()?;
+        let root = plain_path(root.canonicalize()?);
         // PostgreSQL refuses to run as root; run it as an unprivileged user instead.
         let is_root = is_root();
         let run_as = is_root.then(|| {
@@ -190,9 +211,11 @@ impl Postgres {
 
         #[cfg(windows)]
         {
-            let dll = pg.join("bin").join("vcruntime140.dll");
-            if !dll.exists() {
-                std::fs::write(&dll, VCRUNTIME)?;
+            for (name, bytes) in VC_RUNTIME {
+                let dll = pg.join("bin").join(name);
+                if !dll.exists() {
+                    std::fs::write(&dll, bytes)?;
+                }
             }
         }
 

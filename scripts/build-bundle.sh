@@ -53,11 +53,21 @@ fi
 rustup target add "$TARGET" >/dev/null 2>&1 || true
 PG_PATH="$TXZ"; command -v cygpath >/dev/null && PG_PATH=$(cygpath -m "$TXZ")
 if [ "$PLATFORM" = windows-x86_64 ]; then
-  if [ -z "${CM_VCRUNTIME:-}" ]; then
-    [ -n "${SYSTEMROOT:-}" ] || { echo "set CM_VCRUNTIME to a vcruntime140.dll (x64)" >&2; exit 1; }
-    CM_VCRUNTIME=$(cygpath -m "$SYSTEMROOT/System32/vcruntime140.dll")
+  # Microsoft's VC++ runtime (redistributable), needed by the bundled PostgreSQL.
+  if [ -z "${CM_VCRT_DIR:-}" ]; then
+    VCRT="$PWD/vendor/vcrt"
+    if [ ! -f "$VCRT/msvcp140.dll" ]; then
+      tmp=$(mktemp -d)
+      python -m pip download --no-deps --only-binary=:all: --platform win_amd64 --python-version 3.12 msvc-runtime==14.51.36231 -d "$tmp" -q \
+        || python3 -m pip download --no-deps --only-binary=:all: --platform win_amd64 --python-version 3.12 msvc-runtime==14.51.36231 -d "$tmp" -q
+      mkdir -p "$VCRT"
+      (cd "$tmp" && python3 -c "import zipfile,glob,os; z=zipfile.ZipFile(glob.glob('*.whl')[0]); [open(os.path.join('$VCRT', os.path.basename(n)),'wb').write(z.read(n)) for n in z.namelist() if n.endswith('/Scripts/vcruntime140.dll') or n.endswith('/Scripts/vcruntime140_1.dll') or n.endswith('/Scripts/msvcp140.dll')]" 2>/dev/null \
+        || python -c "import zipfile,glob,os; z=zipfile.ZipFile(glob.glob('*.whl')[0]); [open(os.path.join(r'$VCRT', os.path.basename(n)),'wb').write(z.read(n)) for n in z.namelist() if n.endswith('/Scripts/vcruntime140.dll') or n.endswith('/Scripts/vcruntime140_1.dll') or n.endswith('/Scripts/msvcp140.dll')]")
+      rm -rf "$tmp"
+    fi
+    CM_VCRT_DIR="$VCRT"; command -v cygpath >/dev/null && CM_VCRT_DIR=$(cygpath -m "$VCRT")
   fi
-  export CM_VCRUNTIME
+  export CM_VCRT_DIR
 fi
 CM_PG_TXZ="$PG_PATH" cargo build --release --locked -p cm-server --features bundle --target "$TARGET"
 mkdir -p dist

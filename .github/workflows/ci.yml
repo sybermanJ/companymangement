@@ -139,7 +139,7 @@ jobs:
           curl -sf localhost:8080/ | grep -q '<div id="app">' || { cat log.txt; exit 1; }
           curl -sf -X POST localhost:8080/api/v1/signup -H 'content-type: application/json' -H 'x-requested-with: cm' \
             -d '{"company_name":"Smoke","slug":"smoke","default_currency":"CNY","name":"Smoke","email":"smoke@example.test","password":"smoke password 123"}' || { cat log.txt; exit 1; }
-          ls hengtu-data/postgres-17.6/bin/vcruntime140.dll
+          ls hengtu-data/postgres-17.6/bin/vcruntime140.dll hengtu-data/postgres-17.6/bin/msvcp140.dll
           cat log.txt
           taskkill //F //IM hengtu-windows-x86_64.exe || true
       - uses: actions/upload-artifact@v4
