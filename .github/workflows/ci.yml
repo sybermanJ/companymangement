@@ -112,3 +112,37 @@ jobs:
         with:
           name: hengtu-macos
           path: dist/hengtu-macos.zip
+
+  bundle-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: scripts/build-bundle.sh windows-x86_64
+      - name: Smoke test (embedded PostgreSQL, fresh data folder)
+        run: |
+          mkdir -p /c/smoke && cd /c/smoke
+          CM_NO_BROWSER=1 BIND=127.0.0.1:8080 "$GITHUB_WORKSPACE/dist/hengtu-windows-x86_64.exe" > log.txt 2>&1 &
+          for i in $(seq 1 120); do curl -sf localhost:8080/healthz && break; sleep 1; done
+          curl -sf localhost:8080/ | grep -q '<div id="app">' || { cat log.txt; exit 1; }
+          curl -sf -X POST localhost:8080/api/v1/signup -H 'content-type: application/json' -H 'x-requested-with: cm' \
+            -d '{"company_name":"Smoke","slug":"smoke","default_currency":"CNY","name":"Smoke","email":"smoke@example.test","password":"smoke password 123"}' || { cat log.txt; exit 1; }
+          ls hengtu-data/postgres-17.6/bin/vcruntime140.dll
+          cat log.txt
+          taskkill //F //IM hengtu-windows-x86_64.exe || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hengtu-windows-x86_64
+          path: dist/hengtu-windows-x86_64.exe

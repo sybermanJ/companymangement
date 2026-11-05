@@ -7,7 +7,20 @@ async fn main() -> anyhow::Result<()> {
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
         )
+        // The classic Windows console shows colour codes as text.
+        .with_ansi(!cfg!(windows))
         .init();
+    let r = run().await;
+    // A double-clicked program's window closes at exit; keep errors readable.
+    #[cfg(windows)]
+    if let Err(e) = &r {
+        eprintln!("\nError: {e:#}\n\nPress Enter to close.");
+        let _ = std::io::stdin().read_line(&mut String::new());
+    }
+    r
+}
+
+async fn run() -> anyhow::Result<()> {
     if std::env::args().any(|a| a == "--help" || a == "-h") {
         println!("{HELP}");
         return Ok(());
@@ -97,15 +110,30 @@ async fn main() -> anyhow::Result<()> {
         .await
         .with_context(|| format!("bind {bind}"))?;
     tracing::info!(%bind, url = %base_url, "Hengtu is running");
+    // On Windows the program is usually double-clicked: open the browser for the user.
+    #[cfg(all(windows, feature = "bundle"))]
+    if local && std::env::var("CM_NO_BROWSER").is_err() {
+        let _ = std::process::Command::new("cmd")
+            .args(["/C", "start", "", &base_url])
+            .spawn();
+        println!(
+            "\nHengtu is running at {base_url}  (close this window or press Ctrl+C to stop)\n"
+        );
+    }
     let served = axum::serve(listener, app)
         .with_graceful_shutdown(async {
-            let mut term =
-                tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-                    .expect("signal handler");
-            tokio::select! {
-                _ = tokio::signal::ctrl_c() => {}
-                _ = term.recv() => {}
+            #[cfg(unix)]
+            {
+                let mut term =
+                    tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                        .expect("signal handler");
+                tokio::select! {
+                    _ = tokio::signal::ctrl_c() => {}
+                    _ = term.recv() => {}
+                }
             }
+            #[cfg(not(unix))]
+            let _ = tokio::signal::ctrl_c().await;
         })
         .await;
     #[cfg(feature = "bundle")]
@@ -124,7 +152,7 @@ Environment (all optional):
   BIND           address to listen on (default 0.0.0.0:8080)
   APP_BASE_URL   public URL used in emails and webhook addresses (default http://localhost:8080)
   CM_DATA_DIR    data folder for the built-in database and files
-                 (default ./hengtu-data, or /var/lib/hengtu when run as root)
+                 (default ./hengtu-data next to where it is started, or /var/lib/hengtu as Linux root)
   CM_PG_PORT     local port of the built-in PostgreSQL (default 54329, 127.0.0.1 only)
   DATABASE_URL   use an external PostgreSQL instead (a non-superuser role)
   SMTP_URL       send email, e.g. smtps://user:pass@smtp.example.com (otherwise links are logged)

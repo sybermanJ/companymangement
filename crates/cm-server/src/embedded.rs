@@ -10,14 +10,16 @@ use cm_store::sqlx::{self, Connection};
 use include_dir::{include_dir, Dir};
 use rand::RngCore;
 use std::io::Cursor;
-use std::os::unix::fs::{MetadataExt, PermissionsExt};
-use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 static WEB: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/../../web/dist");
 // Absolute path to the platform's PostgreSQL archive, set by scripts/build-bundle.sh.
 static PG_TXZ: &[u8] = include_bytes!(env!("CM_PG_TXZ"));
+// PostgreSQL for Windows is built with MSVC and needs its runtime, which a fresh
+// Windows may not have; Microsoft allows shipping it next to the program.
+#[cfg(windows)]
+static VCRUNTIME: &[u8] = include_bytes!(env!("CM_VCRUNTIME"));
 const PG_DIR: &str = "postgres-17.6";
 
 /// Serves the embedded single-page app; unknown paths get index.html.
@@ -61,10 +63,44 @@ pub async fn web(uri: Uri) -> Response {
 }
 
 /// True when running as root (Linux reads procfs; elsewhere a root-owned home is the hint).
+#[cfg(unix)]
 pub fn is_root() -> bool {
+    use std::os::unix::fs::MetadataExt;
     std::fs::metadata("/proc/self")
         .map(|m| m.uid() == 0)
         .unwrap_or_else(|_| std::env::var("USER").map(|u| u == "root").unwrap_or(false))
+}
+/// Windows: pg_ctl drops administrator rights itself, so no other user is needed.
+#[cfg(not(unix))]
+pub fn is_root() -> bool {
+    false
+}
+
+/// Readable by the owner only (no-op on Windows, where the user profile is private).
+fn private(path: &Path) -> anyhow::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+    Ok(())
+}
+
+/// Runs the command as another user (Unix, when started as root).
+fn as_user(c: &mut Command, uid: Option<u32>) {
+    #[cfg(unix)]
+    if let Some(uid) = uid {
+        use std::os::unix::process::CommandExt;
+        c.uid(uid).gid(uid);
+    }
+    #[cfg(not(unix))]
+    let _ = (c, uid);
+}
+
+fn exe(name: &str) -> String {
+    format!("{name}{}", std::env::consts::EXE_SUFFIX)
 }
 
 /// A running embedded PostgreSQL server.
@@ -83,10 +119,16 @@ fn secret(path: &Path) -> anyhow::Result<String> {
     rand::thread_rng().fill_bytes(&mut b);
     let s: String = b.iter().map(|x| format!("{x:02x}")).collect();
     std::fs::write(path, &s).with_context(|| format!("write {}", path.display()))?;
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
+    private(path)?;
     Ok(s)
 }
 
+#[cfg(not(unix))]
+fn chown_tree(_: &Path, _: u32) -> anyhow::Result<()> {
+    Ok(())
+}
+
+#[cfg(unix)]
 fn chown_tree(path: &Path, uid: u32) -> anyhow::Result<()> {
     std::os::unix::fs::lchown(path, Some(uid), Some(uid))
         .with_context(|| format!("chown {}", path.display()))?;
@@ -128,7 +170,7 @@ impl Postgres {
         });
 
         let pg = root.join(PG_DIR);
-        if !pg.join("bin/postgres").exists() {
+        if !pg.join("bin").join(exe("postgres")).exists() {
             tracing::info!(dir = %pg.display(), "unpacking PostgreSQL (first start only)");
             let tmp = root.join(".pg-unpack");
             let _ = std::fs::remove_dir_all(&tmp);
@@ -146,6 +188,14 @@ impl Postgres {
             std::fs::rename(&tmp, &pg)?;
         }
 
+        #[cfg(windows)]
+        {
+            let dll = pg.join("bin").join("vcruntime140.dll");
+            if !dll.exists() {
+                std::fs::write(&dll, VCRUNTIME)?;
+            }
+        }
+
         let su_pw = secret(&root.join("db-superuser.secret"))?;
         let app_pw = secret(&root.join("db-app.secret"))?;
         let data = root.join("db");
@@ -158,13 +208,12 @@ impl Postgres {
                 std::fs::write(&log, "")?;
             }
             chown_tree(&log, uid)?;
+            #[cfg(unix)]
             std::os::unix::fs::lchown(&root, Some(uid), None)?;
         }
         let cmd = |name: &str| {
-            let mut c = Command::new(pg.join("bin").join(name));
-            if let Some(uid) = run_as {
-                c.uid(uid).gid(uid);
-            }
+            let mut c = Command::new(pg.join("bin").join(exe(name)));
+            as_user(&mut c, run_as);
             c.env("LC_ALL", "C");
             c
         };
@@ -173,7 +222,7 @@ impl Postgres {
             tracing::info!(dir = %data.display(), "creating database cluster (first start only)");
             let pwfile = root.join(".pwfile");
             std::fs::write(&pwfile, &su_pw)?;
-            std::fs::set_permissions(&pwfile, std::fs::Permissions::from_mode(0o600))?;
+            private(&pwfile)?;
             if let Some(uid) = run_as {
                 chown_tree(&pwfile, uid)?;
             }
@@ -203,7 +252,7 @@ impl Postgres {
             }
         }
 
-        let pg_ctl = pg.join("bin/pg_ctl");
+        let pg_ctl = pg.join("bin").join(exe("pg_ctl"));
         let running = cmd("pg_ctl")
             .arg("-D")
             .arg(&data)
@@ -265,9 +314,7 @@ impl Postgres {
     /// Stops the server (fast shutdown: open transactions roll back).
     pub fn stop(&self) {
         let mut c = Command::new(&self.pg_ctl);
-        if let Some(uid) = self.run_as {
-            c.uid(uid).gid(uid);
-        }
+        as_user(&mut c, self.run_as);
         let _ = c
             .arg("-D")
             .arg(&self.data)
