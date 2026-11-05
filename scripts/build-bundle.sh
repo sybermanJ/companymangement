@@ -61,8 +61,10 @@ if [ "$PLATFORM" = windows-x86_64 ]; then
       python -m pip download --no-deps --only-binary=:all: --platform win_amd64 --python-version 3.12 msvc-runtime==14.51.36231 -d "$tmp" -q \
         || python3 -m pip download --no-deps --only-binary=:all: --platform win_amd64 --python-version 3.12 msvc-runtime==14.51.36231 -d "$tmp" -q
       mkdir -p "$VCRT"
-      (cd "$tmp" && python3 -c "import zipfile,glob,os; z=zipfile.ZipFile(glob.glob('*.whl')[0]); [open(os.path.join('$VCRT', os.path.basename(n)),'wb').write(z.read(n)) for n in z.namelist() if n.endswith('/Scripts/vcruntime140.dll') or n.endswith('/Scripts/vcruntime140_1.dll') or n.endswith('/Scripts/msvcp140.dll')]" 2>/dev/null \
-        || python -c "import zipfile,glob,os; z=zipfile.ZipFile(glob.glob('*.whl')[0]); [open(os.path.join(r'$VCRT', os.path.basename(n)),'wb').write(z.read(n)) for n in z.namelist() if n.endswith('/Scripts/vcruntime140.dll') or n.endswith('/Scripts/vcruntime140_1.dll') or n.endswith('/Scripts/msvcp140.dll')]")
+      VCRT_NATIVE="$VCRT"; command -v cygpath >/dev/null && VCRT_NATIVE=$(cygpath -m "$VCRT")
+      WHEEL=$(ls "$tmp"/*.whl); command -v cygpath >/dev/null && WHEEL=$(cygpath -m "$WHEEL")
+      PY=python3; command -v python3 >/dev/null || PY=python
+      "$PY" -c "import zipfile,os,sys; z=zipfile.ZipFile(sys.argv[1]); [open(os.path.join(sys.argv[2], os.path.basename(n)),'wb').write(z.read(n)) for n in z.namelist() if n.split('/')[-2:-1]==['Scripts'] and os.path.basename(n) in ('vcruntime140.dll','vcruntime140_1.dll','msvcp140.dll')]" "$WHEEL" "$VCRT_NATIVE"
       rm -rf "$tmp"
     fi
     CM_VCRT_DIR="$VCRT"; command -v cygpath >/dev/null && CM_VCRT_DIR=$(cygpath -m "$VCRT")
